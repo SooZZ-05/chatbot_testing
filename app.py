@@ -150,7 +150,7 @@ if hf_token and uploaded_file:
                     ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
 
             st.session_state.history.append({"user": question, "assistant": ai_reply})
-            st.experimental_rerun()
+            st.rerun()
 
 elif not hf_token:
     st.info("Please enter your HuggingFace API token to start chatting.")
