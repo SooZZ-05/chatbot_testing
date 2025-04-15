@@ -136,10 +136,12 @@ if hf_token and uploaded_file:
         st.subheader("🧠 Chat with your PDF")
 
         for entry in st.session_state.history:
-            st.markdown(f"**You:** {entry['user']}")
-            st.markdown(f"**AI Assistant:** {entry['assistant']}")
+            with st.chat_message("user"):
+                st.markdown(entry["user"])
+            with st.chat_message("assistant"):
+                st.markdown(entry["assistant"])
 
-        question = st.text_input("💬 Your message", key="chat_input")
+        question = st.chat_input("💬 Your message")
 
         if question:
             if is_greeting_or_smalltalk(question):
@@ -150,7 +152,6 @@ if hf_token and uploaded_file:
                     ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
 
             st.session_state.history.append({"user": question, "assistant": ai_reply})
-            st.session_state.chat_input = ""
             st.rerun()
 
 elif not hf_token:
