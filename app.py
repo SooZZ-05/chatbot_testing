@@ -69,7 +69,7 @@ def find_relevant_chunk(question, chunks):
 
 # ========== LLM Logic ==========
 def ask_llm_with_history(question, context, history, hf_token):
-    url = "https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta"
+    url = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1"
     headers = {
         "Authorization": f"Bearer {hf_token}",
         "Content-Type": "application/json"
