@@ -104,6 +104,7 @@ Avoid formal tones or sign-offs. Be friendly, clear, and conversational.
 # ========== Emoji Formatting ==========
 def format_response(text):
     text = re.sub(r"(?<=[.!?])\s+(?=[A-Z])", "\n\n", text)
+    text = re.sub(r"●", "\n\n●", text)
     replacements = {
         r"\bCPU\b": "🧠 CPU", r"\bprocessor\b": "🧠 Processor",
         r"\bRAM\b": "💾 RAM", r"\bSSD\b": "💽 SSD",
@@ -114,6 +115,8 @@ def format_response(text):
     }
     for word, emoji in replacements.items():
         text = re.sub(word, emoji, text, flags=re.IGNORECASE)
+
+    text = re.sub(r'\n{3,}', '\n\n', text)
     return text.strip()
 
 # ========== Streamlit UI ==========
