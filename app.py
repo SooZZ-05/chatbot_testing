@@ -68,43 +68,37 @@ def find_relevant_chunk(question, chunks):
     return best_chunk
 
 # ========== LLM Logic ==========
-def ask_llm_with_history(question, context, history, hf_token):
-    url = "https://api-inference.huggingface.co/models/google/flan-t5-base"
+def ask_llm_with_history(question, context, history, openrouter_api_key):
+    url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
-        "Authorization": f"Bearer {hf_token}",
+        "Authorization": f"Bearer {openrouter_api_key}",
         "Content-Type": "application/json"
     }
 
-    history_text = "\n".join([f"[USER]\n{msg['user']}\n\n[ASSISTANT]\n{msg['assistant']}" for msg in history])
-    prompt = f"""[SYSTEM]
-You are a friendly AI assistant who gives casual and helpful laptop advice.
-ONLY use the internal knowledge you gain from the info below — but NEVER mention, refer to, or hint at it in your answers.
-Avoid formal tones or sign-offs. Be friendly, clear, and conversational.
-[INFO SOURCE]
-{context}
+    messages = [{"role": "system", "content": 
+        "You are a friendly AI assistant who gives casual and helpful laptop advice. "
+        "ONLY use the internal knowledge you gain from the info below — but NEVER mention, refer to, or hint at it in your answers. "
+        "Avoid formal tones or sign-offs. Be friendly, clear, and conversational.\n\n"
+        f"[INFO SOURCE]\n{context}"}]
 
-{history_text}
-[USER]
-{question}
-[ASSISTANT]
-"""
+    for entry in history:
+        messages.append({"role": "user", "content": entry["user"]})
+        messages.append({"role": "assistant", "content": entry["assistant"]})
+
+    messages.append({"role": "user", "content": question})
 
     payload = {
-        "inputs": prompt,
-        "parameters": {"temperature": 0.3, "max_new_tokens": 512, "top_p": 0.9}
+        "model": "mistralai/mistral-7b-instruct",
+        "messages": messages,
+        "temperature": 0.3,
+        "top_p": 0.9
     }
 
     response = requests.post(url, headers=headers, json=payload)
     if response.status_code == 200:
-        text = response.json()[0]["generated_text"]
-        return format_response(text.split("[ASSISTANT]")[-1])
+        return format_response(response.json()["choices"][0]["message"]["content"])
     else:
         return f"❌ Error {response.status_code}: {response.text}"
-
-def truncate_text(text, max_chars=1500):
-    if len(text) > max_chars:
-        return text[:max_chars].rsplit("\n", 1)[0] + "\n\n... _(truncated)_"
-    return text
 
 # ========== Emoji Formatting ==========
 def format_response(text):
@@ -128,7 +122,7 @@ def format_response(text):
 st.set_page_config(page_title="💻 Laptop Chatbot", page_icon="💬", layout="wide")
 st.title("💻 Laptop Recommendation Chatbot")
 
-hf_token = st.text_input("🔑 Enter your HuggingFace API Token", type="password")
+hf_token = st.text_input("🔑 Enter your OpenRouter API Key", type="password")
 uploaded_file = st.file_uploader("📄 Upload a Laptop Specification PDF", type=["pdf"])
 
 # Initialize session state for conversation
