@@ -150,6 +150,7 @@ if hf_token and uploaded_file:
                     ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
 
             st.session_state.history.append({"user": question, "assistant": ai_reply})
+            st.session_state.chat_input = ""
             st.rerun()
 
 elif not hf_token:
