@@ -119,6 +119,11 @@ def format_response(text):
     return text.strip()
 
 # ========== Streamlit UI ==========
+def truncate_text(text, limit=1500):
+    if len(text) <= limit:
+        return text
+    return text[:limit] + "..."
+
 st.set_page_config(page_title="💻 Laptop Chatbot", page_icon="💬", layout="wide")
 st.title("💻 Laptop Recommendation Chatbot")
 
