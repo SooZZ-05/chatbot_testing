@@ -10,6 +10,7 @@ import re
 import requests
 import random
 from nltk.stem import WordNetLemmatizer
+from difflib import get_close_matches
 
 # ========== Greeting Logic ==========
 lemmatizer = WordNetLemmatizer()
@@ -23,6 +24,11 @@ greeting_responses = [
     "Hi! Would you like recommendations for student, business, or gaming laptops?"
 ]
 
+greeting_keywords = [
+    "hi", "hello", "hey", "heyy", "helloo", "hellooo", "helo", "hii", "yo", "hiya", "sup", "what's up",
+    "howdy", "good morning", "good evening", "good afternoon", "how are you", "how's it going"
+]
+
 category_suggestion = (
     "Would you like suggestions for laptops used in:\n"
     "1. Study 📚\n2. Business 💼\n3. Gaming 🎮\nJust let me know!"
@@ -30,18 +36,8 @@ category_suggestion = (
 
 def is_greeting_or_smalltalk(user_input):
     user_input = user_input.lower().strip()
-    patterns = [
-        r"hi", r"hello", r"hey", r"good (morning|afternoon|evening)",
-        r"how are you", r"what's up", r"how's it going", r"yo",
-        r"sup", r"greetings", r"nice to meet you", r"howdy",
-        r"everything okay", r"how are things", r"hello there", r"hiya",
-        r"anyone there", r"can you help me", r"is this working", r"test",
-        r"heyy+", r"helo+", r"bello", r"hallo", r"yo"
-    ]
-    for pattern in patterns:
-        if re.search(rf"\b{pattern}\b", user_input):
-            return True
-    return False
+    close = get_close_matches(user_input, greeting_keywords, cutoff=0.6)
+    return bool(close)
 
 def get_random_greeting():
     return random.choice(greeting_responses)
@@ -78,7 +74,7 @@ def ask_llm(question, context, hf_token):
         "Authorization": f"Bearer {hf_token}",
         "Content-Type": "application/json"
     }
-
+    history_text = "\n".join([f"[USER]\n{msg['user']}\n\n[ASSISTANT]\n{msg['assistant']}" for msg in history])
     prompt = f"""[SYSTEM]
 You are a friendly AI assistant who gives casual and helpful laptop advice.
 ONLY use the internal knowledge you gain from the info below — but NEVER mention, refer to, or hint at it in your answers.
@@ -86,6 +82,7 @@ Avoid formal tones or sign-offs. Be friendly, clear, and conversational.
 [INFO SOURCE]
 {context}
 
+{history_text}
 [USER]
 {question}
 
@@ -119,27 +116,40 @@ def format_response(text):
     return text.strip()
 
 # ========== Streamlit App ==========
-st.set_page_config(page_title="Laptop Chatbot", page_icon="💻")
+st.set_page_config(page_title="💻 Laptop Chatbot", page_icon="💬", layout="wide")
 st.title("💻 Laptop Recommendation Chatbot")
 
 hf_token = st.text_input("🔑 Enter your HuggingFace API Token", type="password")
 uploaded_file = st.file_uploader("📄 Upload a Laptop Specification PDF", type=["pdf"])
 
+if "history" not in st.session_state:
+    st.session_state.history = []
+
 if hf_token and uploaded_file:
-    with st.spinner("Extracting and processing your document..."):
+    with st.spinner("🔍 Extracting and processing your document..."):
         document_text = extract_text_from_pdf(uploaded_file)
         pdf_chunks = chunk_text(document_text)
 
-    question = st.text_input("💬 Ask me anything about the laptops in the document!")
+    with st.container():
+        st.subheader("🧠 Chat with your PDF")
 
-    if question:
-        if is_greeting_or_smalltalk(question):
-            st.markdown(f"**AI Assistant:**\n\n{get_random_greeting()}\n\n{category_suggestion}")
-        else:
-            with st.spinner("Thinking..."):
-                context = find_relevant_chunk(question, pdf_chunks)
-                answer = ask_llm(question, context, hf_token)
-            st.markdown(f"**AI Assistant:**\n\n{answer}")
+        for entry in st.session_state.history:
+            st.markdown(f"**You:** {entry['user']}")
+            st.markdown(f"**AI Assistant:** {entry['assistant']}")
+
+        question = st.text_input("💬 Your message", key="chat_input")
+
+        if question:
+            if is_greeting_or_smalltalk(question):
+                ai_reply = f"{get_random_greeting()}\n\n{category_suggestion}"
+            else:
+                with st.spinner("🤔 Thinking..."):
+                    context = find_relevant_chunk(question, pdf_chunks)
+                    ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
+
+            st.session_state.history.append({"user": question, "assistant": ai_reply})
+            st.experimental_rerun()
+
 elif not hf_token:
     st.info("Please enter your HuggingFace API token to start chatting.")
 elif not uploaded_file:
