@@ -142,7 +142,7 @@ if hf_token and uploaded_file:
             with st.chat_message("user"):
                 st.markdown(entry["user"])
             with st.chat_message("assistant"):
-                st.markdown(entry["assistant"])
+                st.write(entry["assistant"])
 
         question = st.chat_input("💬 Your message")
 
