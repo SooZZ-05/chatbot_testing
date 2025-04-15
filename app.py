@@ -68,12 +68,13 @@ def find_relevant_chunk(question, chunks):
     return best_chunk
 
 # ========== LLM Logic ==========
-def ask_llm(question, context, hf_token):
+def ask_llm_with_history(question, context, history, hf_token):
     url = "https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta"
     headers = {
         "Authorization": f"Bearer {hf_token}",
         "Content-Type": "application/json"
     }
+
     history_text = "\n".join([f"[USER]\n{msg['user']}\n\n[ASSISTANT]\n{msg['assistant']}" for msg in history])
     prompt = f"""[SYSTEM]
 You are a friendly AI assistant who gives casual and helpful laptop advice.
@@ -85,9 +86,9 @@ Avoid formal tones or sign-offs. Be friendly, clear, and conversational.
 {history_text}
 [USER]
 {question}
-
 [ASSISTANT]
 """
+
     payload = {
         "inputs": prompt,
         "parameters": {"temperature": 0.3, "max_new_tokens": 512, "top_p": 0.9}
@@ -115,13 +116,14 @@ def format_response(text):
         text = re.sub(word, emoji, text, flags=re.IGNORECASE)
     return text.strip()
 
-# ========== Streamlit App ==========
+# ========== Streamlit UI ==========
 st.set_page_config(page_title="💻 Laptop Chatbot", page_icon="💬", layout="wide")
 st.title("💻 Laptop Recommendation Chatbot")
 
 hf_token = st.text_input("🔑 Enter your HuggingFace API Token", type="password")
 uploaded_file = st.file_uploader("📄 Upload a Laptop Specification PDF", type=["pdf"])
 
+# Initialize session state for conversation
 if "history" not in st.session_state:
     st.session_state.history = []
 
