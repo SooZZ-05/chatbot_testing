@@ -1,5 +1,8 @@
 import nltk
-nltk.download('wordnet')
+try:
+    nltk.data.find('corpora/wordnet')
+except LookupError:
+    nltk.download('wordnet')
 
 import streamlit as st
 import fitz  # PyMuPDF
