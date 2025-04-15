@@ -101,6 +101,11 @@ Avoid formal tones or sign-offs. Be friendly, clear, and conversational.
     else:
         return f"❌ Error {response.status_code}: {response.text}"
 
+def truncate_text(text, max_chars=1500):
+    if len(text) > max_chars:
+        return text[:max_chars].rsplit("\n", 1)[0] + "\n\n... _(truncated)_"
+    return text
+
 # ========== Emoji Formatting ==========
 def format_response(text):
     text = re.sub(r"(?<=[.!?])\s+(?=[A-Z])", "\n\n", text)
@@ -142,7 +147,12 @@ if hf_token and uploaded_file:
             with st.chat_message("user"):
                 st.markdown(entry["user"])
             with st.chat_message("assistant"):
-                st.write(entry["assistant"])
+                short_reply = truncate_text(entry["assistant"])
+                st.write(short_reply)
+
+                if len(entry["assistant"]) > 1500:
+                    with st.expander("🔎 View full response"):
+                        st.write(entry["assistant"])
 
         question = st.chat_input("💬 Your message")
 
