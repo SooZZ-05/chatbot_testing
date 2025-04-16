@@ -114,9 +114,9 @@ def format_response(text):
         r"\bweight\b": "⚖️ Weight",
     }
     for word, emoji in replacements.items():
-        if emoji_text not in used_emojis:
-            text = re.sub(word, emoji_text, text, count=1, flags=re.IGNORECASE)
-            used_emojis.add(emoji_text)
+        if emoji not in used_emojis:
+            text = re.sub(word, emoji, text, count=1, flags=re.IGNORECASE)
+            used_emojis.add(emoji)
 
     text = re.sub(r'\n{3,}', '\n\n', text)
     return text.strip()
