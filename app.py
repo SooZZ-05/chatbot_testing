@@ -167,6 +167,6 @@ if hf_token and uploaded_file:
             st.rerun()
 
 elif not hf_token:
-    st.info("Please enter your HuggingFace API token to start chatting.")
+    st.info("Please enter your OpenRouter API token to start chatting.")
 elif not uploaded_file:
     st.info("Please upload a PDF with laptop specifications.")
