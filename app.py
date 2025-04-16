@@ -30,8 +30,11 @@ greeting_keywords = [
 ]
 
 category_suggestion = (
-    "Would you like suggestions for laptops used in:\n"
-    "1. Study 📚\n2. Business 💼\n3. Gaming 🎮\nJust let me know!"
+    "Would you like suggestions for laptops used in:\n\n"
+    "1. Study 📚\n"
+    "2. Business 💼\n"
+    "3. Gaming 🎮\n\n"
+    "Just let me know! 😃"
 )
 
 def is_greeting_or_smalltalk(user_input):
@@ -41,6 +44,13 @@ def is_greeting_or_smalltalk(user_input):
 
 def get_random_greeting():
     return random.choice(greeting_responses)
+
+if is_greeting_or_smalltalk(question):
+    greeting = get_random_greeting()
+    # Only add suggestion if not already part of the greeting
+    if "recommendation" not in greeting.lower() and "suggestion" not in greeting.lower():
+        greeting += "\n\n" + category_suggestion
+    ai_reply = greeting
 
 # ========== PDF Handling ==========
 def extract_text_from_pdf(uploaded_file):
