@@ -11,6 +11,8 @@ import requests
 import random
 from nltk.stem import WordNetLemmatizer
 from difflib import get_close_matches
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
 # ========== Greeting Logic ==========
 lemmatizer = WordNetLemmatizer()
@@ -60,15 +62,17 @@ def chunk_text(text, chunk_size=3000, overlap=500):
     return chunks
 
 def find_relevant_chunk(question, chunks):
-    question_keywords = question.lower().split()
-    best_score = 0
-    best_chunk = chunks[0]
-    for chunk in chunks:
-        score = sum(1 for word in question_keywords if word in chunk.lower())
-        if score > best_score:
-            best_score = score
-            best_chunk = chunk
-    return best_chunk
+    # Combine chunks and question for consistent vector space
+    documents = chunks + [question]
+    vectorizer = TfidfVectorizer().fit(documents)
+
+    chunk_vectors = vectorizer.transform(chunks)
+    question_vector = vectorizer.transform([question])
+
+    # Compute cosine similarity
+    similarities = cosine_similarity(question_vector, chunk_vectors).flatten()
+    best_index = similarities.argmax()
+    return chunks[best_index]
 
 # ========== LLM Logic ==========
 def ask_llm_with_history(question, context, history, openrouter_api_key):
