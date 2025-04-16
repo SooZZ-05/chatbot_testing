@@ -170,7 +170,10 @@ if hf_token and uploaded_file:
 
         if question:
             if is_greeting_or_smalltalk(question):
-                ai_reply = f"{get_random_greeting()}\n\n{category_suggestion}"
+                greeting = get_random_greeting()
+                if "recommendation" not in greeting.lower() and "suggestion" not in greeting.lower():
+                    greeting += "\n\n" + category_suggestion
+                ai_reply = greeting
             else:
                 with st.spinner("🤔 Thinking..."):
                     context = find_relevant_chunk(question, pdf_chunks)
