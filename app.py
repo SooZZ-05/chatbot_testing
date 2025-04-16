@@ -104,6 +104,7 @@ def ask_llm_with_history(question, context, history, openrouter_api_key):
 def format_response(text):
     text = re.sub(r"(?<=[.!?])\s+(?=[A-Z])", "\n\n", text)
     text = re.sub(r"●", "\n\n●", text)
+    used_emojis = set()
     replacements = {
         r"\bCPU\b": "🧠 CPU", r"\bprocessor\b": "🧠 Processor",
         r"\bRAM\b": "💾 RAM", r"\bSSD\b": "💽 SSD",
@@ -113,7 +114,9 @@ def format_response(text):
         r"\bweight\b": "⚖️ Weight",
     }
     for word, emoji in replacements.items():
-        text = re.sub(word, emoji, text, flags=re.IGNORECASE)
+        if emoji_text not in used_emojis:
+            text = re.sub(word, emoji_text, text, count=1, flags=re.IGNORECASE)
+            used_emojis.add(emoji_text)
 
     text = re.sub(r'\n{3,}', '\n\n', text)
     return text.strip()
