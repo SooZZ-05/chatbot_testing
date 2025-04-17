@@ -145,7 +145,7 @@ def save_chat_to_pdf(chat_history):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", 'B', 16)
-    pdf.cell(0, 10, "📘 Chat History", ln=True, align="C")
+    pdf.cell(0, 10, "Chat History", ln=True, align="C")
     pdf.cell(0, 10, "Chat History", ln=True, align="C")
     pdf.ln(5)
 
@@ -156,7 +156,7 @@ def save_chat_to_pdf(chat_history):
         # User Message
         pdf.set_font("Arial", 'B', 12)
         pdf.set_text_color(33, 33, 33)
-        pdf.cell(0, 8, f"🧑 You:", ln=True)
+        pdf.cell(0, 8, f"You:", ln=True)
         pdf.cell(0, 8, "You:", ln=True)
         pdf.set_font("Arial", '', 12)
         pdf.set_text_color(0, 0, 0)
@@ -166,7 +166,7 @@ def save_chat_to_pdf(chat_history):
         # Bot Message
         pdf.set_font("Arial", 'B', 12)
         pdf.set_text_color(0, 102, 204)
-        pdf.cell(0, 8, f"🤖 Assistant:", ln=True)
+        pdf.cell(0, 8, f"Assistant:", ln=True)
         pdf.cell(0, 8, "Assistant:", ln=True)
         pdf.set_font("Arial", '', 12)
         pdf.set_text_color(0, 0, 0)
