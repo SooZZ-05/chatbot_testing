@@ -21,7 +21,8 @@ load_dotenv()
 hf_token = os.getenv("OPENROUTER_API_KEY", st.secrets.get("OPENROUTER_API_KEY"))
 
 # ===== NLTK Resource Setup =====
-NLTK_DATA_DIR = os.path.join(os.path.expanduser("~"), "nltk_data")
+NLTK_DATA_DIR = os.path.join(os.getcwd(), "nltk_data")  # ✅ safer than home dir
+os.makedirs(NLTK_DATA_DIR, exist_ok=True)
 nltk.data.path.append(NLTK_DATA_DIR)
 
 for resource in ['punkt', 'stopwords', 'averaged_perceptron_tagger', 'wordnet']:
