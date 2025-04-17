@@ -6,3 +6,4 @@ scikit-learn
 python-dotenv
 fpdf
 pytz
+reportlab
