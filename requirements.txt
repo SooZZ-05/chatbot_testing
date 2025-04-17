@@ -3,3 +3,4 @@ pymupdf
 nltk
 requests
 scikit-learn
+python-dotenv
