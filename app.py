@@ -142,14 +142,19 @@ def strip_emojis(text):
     return re.sub(r'[^\x00-\x7F]+', '', text)
     
 def save_chat_to_pdf(chat_history):
+    def strip_emojis(text):
+        return re.sub(r'[^\x00-\x7F]+', '', text)
+
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
 
     for entry in chat_history:
-        pdf.multi_cell(0, 10, f"👤 You: {entry['user']}")
+        user_text = strip_emojis(f"You: {entry['user']}")
+        bot_text = strip_emojis(f"Bot: {entry['assistant']}")
+        pdf.multi_cell(0, 10, user_text)
         pdf.ln(2)
-        pdf.multi_cell(0, 10, f"🤖 Bot: {entry['assistant']}")
+        pdf.multi_cell(0, 10, bot_text)
         pdf.ln(5)
 
     pdf_bytes = pdf.output(dest='S').encode('latin1')
