@@ -13,11 +13,6 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from io import BytesIO
 from datetime import datetime
-from reportlab.lib.pagesizes import A4
-from reportlab.lib import colors
-from reportlab.pdfgen import canvas
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import Paragraph, Frame
 
 # ===== Load API Key =====
 load_dotenv()
@@ -145,61 +140,48 @@ def truncate_text(text, limit=1500):
 
 # ===== Chat Saving Button =====
 def save_chat_to_pdf(chat_history):
-    def strip_emojis(text):
-        return re.sub(r'[^\x00-\x7F]+', '', text)
-
-    buffer = BytesIO()
-    c = canvas.Canvas(buffer, pagesize=A4)
-    width, height = A4
-    y = height - 50
-    margin = 40
-    line_spacing = 10
-
-    # ===== Header =====
-    c.setFont("Helvetica-Bold", 16)
-    c.drawCentredString(width / 2, y, "Chat History")
-    y -= 20
-
-    c.setFont("Helvetica", 10)
-    malaysia_time = datetime.now(pytz.timezone("Asia/Kuala_Lumpur")).strftime("%B %d, %Y %H:%M")
-    c.drawCentredString(width / 2, y, f"Exported on {malaysia_time} (MYT)")
-    y -= 30
-
-    styles = getSampleStyleSheet()
-    normal_style = styles["Normal"]
-    box_width = width - 2 * margin
-
-    for idx, entry in enumerate(chat_history):
-        user_msg = strip_emojis(entry['user']).strip().replace("\n", "<br/>")
-        bot_msg = strip_emojis(entry['assistant']).strip().replace("\n", "<br/>")
-
-        # Alternate background color
-        bg_color = colors.whitesmoke if idx % 2 == 0 else colors.lightgrey
-
-        def draw_boxed_text(label, message, label_color):
-            nonlocal y
-            p = Paragraph(f"<b>{label}</b><br/>{message}", normal_style)
-            w, h = p.wrap(box_width, height)
-
-            # New page check
-            if y - h < 50:
-                c.showPage()
-                y = height - 50
-
-            c.setFillColor(bg_color)
-            c.rect(margin, y - h, box_width, h + 6, fill=1, stroke=0)
-
-            frame = Frame(margin + 5, y - h + 3, box_width - 10, h, showBoundary=0)
-            frame.addFromList([p], c)
-
-            y -= h + 15  # Space after block
-
-        draw_boxed_text("You:", user_msg, colors.black)
-        draw_boxed_text("Assistant:", bot_msg, colors.blue)
-
-    c.save()
-    buffer.seek(0)
-    return buffer
+     def strip_emojis(text):
+         return re.sub(r'[^\x00-\x7F]+', '', text)
+ 
+     pdf = FPDF()
+     pdf.add_page()
+     pdf.set_font("Arial", 'B', 16)
+     pdf.cell(0, 10, "📘 Chat History", ln=True, align="C")
+     pdf.cell(0, 10, "Chat History", ln=True, align="C")
+     pdf.cell(0, 10, "Chat History", ln=True, align="C")
+     pdf.ln(5)
+ 
+ @@ -156,7 +156,7 @@
+         # User Message
+         pdf.set_font("Arial", 'B', 12)
+         pdf.set_text_color(33, 33, 33)
+         pdf.cell(0, 8, f"🧑 You:", ln=True)
+         pdf.cell(0, 8, f"You:", ln=True)
+         pdf.cell(0, 8, "You:", ln=True)
+         pdf.set_font("Arial", '', 12)
+         pdf.set_text_color(0, 0, 0)
+ @@ -166,28 +166,28 @@
+         # Bot Message
+         pdf.set_font("Arial", 'B', 12)
+         pdf.set_text_color(0, 102, 204)
+         pdf.cell(0, 8, f"🤖 Assistant:", ln=True)
+         pdf.cell(0, 8, f"Assistant:", ln=True)
+         pdf.cell(0, 8, "Assistant:", ln=True)
+         pdf.set_font("Arial", '', 12)
+         pdf.set_text_color(0, 0, 0)
+         pdf.multi_cell(0, 8, bot_msg)
+         pdf.ln(5)
+ 
+         # Divider
+         pdf.set_draw_color(200, 200, 200)
+         pdf.set_draw_color(220, 220, 220)
+         pdf.set_line_width(0.3)
+         pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+         pdf.ln(5)
+ 
+     # Export safely
+     pdf_bytes = pdf.output(dest='S').encode('latin1')
+     return BytesIO(pdf_bytes)
     
 # ===== Streamlit UI =====
 st.set_page_config(page_title="💻 Laptop Chatbot", page_icon="💬", layout="wide")
