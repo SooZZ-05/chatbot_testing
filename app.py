@@ -138,20 +138,26 @@ def truncate_text(text, limit=1500):
     return text[:limit] + "..."
 
 # ===== Chat Saving Button =====
+def strip_emojis(text):
+    return re.sub(r'[^\x00-\x7F]+', '', text)
+    
 def save_chat_to_pdf(history):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
 
-    pdf.cell(200, 10, txt="💬 Chat History", ln=True, align="C")
+    pdf.cell(200, 10, txt="Chat History", ln=True, align="C")
     pdf.ln(10)
 
     for entry in history:
+        user_msg = strip_emojis(entry['user'])
+        assistant_msg = strip_emojis(entry['assistant'])
+
         pdf.set_font("Arial", style="B", size=12)
-        pdf.multi_cell(0, 10, txt=f"👤 You: {entry['user']}")
+        pdf.multi_cell(0, 10, txt=f"You: {user_msg}")
         pdf.ln(1)
-        pdf.set_font("Arial", size=12)
-        pdf.multi_cell(0, 10, txt=f"🤖 Assistant: {entry['assistant']}")
+        pdf.set_font("Arial", style="", size=12)
+        pdf.multi_cell(0, 10, txt=f"Assistant: {assistant_msg}")
         pdf.ln(5)
 
     pdf_output = BytesIO()
