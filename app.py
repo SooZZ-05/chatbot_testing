@@ -11,9 +11,13 @@ from nltk.stem import WordNetLemmatizer
 from difflib import get_close_matches
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-from fpdf import FPDF
 from io import BytesIO
 from datetime import datetime
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.pdfgen import canvas
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import Paragraph, Frame
 
 # ===== Load API Key =====
 load_dotenv()
@@ -144,55 +148,58 @@ def save_chat_to_pdf(chat_history):
     def strip_emojis(text):
         return re.sub(r'[^\x00-\x7F]+', '', text)
 
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_auto_page_break(auto=True, margin=15)
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+    y = height - 50
+    margin = 40
+    line_spacing = 10
 
     # ===== Header =====
-    pdf.set_font("Arial", 'B', 16)
-    pdf.set_text_color(40, 40, 40)
-    pdf.cell(0, 10, "Chat History", ln=True, align="C")
-    pdf.set_font("Arial", '', 10)
+    c.setFont("Helvetica-Bold", 16)
+    c.drawCentredString(width / 2, y, "Chat History")
+    y -= 20
+
+    c.setFont("Helvetica", 10)
     malaysia_time = datetime.now(pytz.timezone("Asia/Kuala_Lumpur")).strftime("%B %d, %Y %H:%M")
-    pdf.cell(0, 10, f"Exported on {malaysia_time} (MYT)", ln=True, align="C")
-    pdf.ln(5)
+    c.drawCentredString(width / 2, y, f"Exported on {malaysia_time} (MYT)")
+    y -= 30
+
+    styles = getSampleStyleSheet()
+    normal_style = styles["Normal"]
+    box_width = width - 2 * margin
 
     for idx, entry in enumerate(chat_history):
-        user_msg = strip_emojis(entry['user']).strip()
-        bot_msg = strip_emojis(entry['assistant']).strip()
+        user_msg = strip_emojis(entry['user']).strip().replace("\n", "<br/>")
+        bot_msg = strip_emojis(entry['assistant']).strip().replace("\n", "<br/>")
 
-        bg_color = (245, 245, 245) if idx % 2 == 0 else (255, 255, 255)
+        # Alternate background color
+        bg_color = colors.whitesmoke if idx % 2 == 0 else colors.lightgrey
 
-        def draw_message_block(label, text, label_color=(0, 0, 0)):
-            pdf.set_font("Arial", 'B', 11)
-            pdf.set_text_color(*label_color)
-            pdf.cell(0, 8, label, ln=True)
+        def draw_boxed_text(label, message, label_color):
+            nonlocal y
+            p = Paragraph(f"<b>{label}</b><br/>{message}", normal_style)
+            w, h = p.wrap(box_width, height)
 
-            pdf.set_font("Arial", '', 11)
-            pdf.set_text_color(0, 0, 0)
+            # New page check
+            if y - h < 50:
+                c.showPage()
+                y = height - 50
 
-            # Measure height
-            lines = pdf.multi_cell(0, 8, text, split_only=True)
-            block_height = 8 * len(lines)
-            x = 10
-            y = pdf.get_y()
-            pdf.set_fill_color(*bg_color)
-            pdf.rect(x, y, 190, block_height)
-            pdf.multi_cell(0, 8, text)
-            pdf.ln(2)
+            c.setFillColor(bg_color)
+            c.rect(margin, y - h, box_width, h + 6, fill=1, stroke=0)
 
-        # Draw user and assistant messages
-        draw_message_block("You:", user_msg, label_color=(0, 0, 0))
-        draw_message_block("Assistant:", bot_msg, label_color=(0, 102, 204))
+            frame = Frame(margin + 5, y - h + 3, box_width - 10, h, showBoundary=0)
+            frame.addFromList([p], c)
 
-        # Divider line
-        pdf.set_draw_color(220, 220, 220)
-        pdf.set_line_width(0.3)
-        pdf.line(10, pdf.get_y(), 200, pdf.get_y())
-        pdf.ln(4)
+            y -= h + 15  # Space after block
 
-    pdf_bytes = pdf.output(dest='S').encode('latin1')
-    return BytesIO(pdf_bytes)
+        draw_boxed_text("You:", user_msg, colors.black)
+        draw_boxed_text("Assistant:", bot_msg, colors.blue)
+
+    c.save()
+    buffer.seek(0)
+    return buffer
     
 # ===== Streamlit UI =====
 st.set_page_config(page_title="💻 Laptop Chatbot", page_icon="💬", layout="wide")
