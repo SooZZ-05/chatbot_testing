@@ -149,13 +149,10 @@ def save_chat_to_pdf(chat_history):
 
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.set_auto_page_break(auto=False)  # manual control
 
-    # ===== Header =====
     pdf.set_font("Arial", 'B', 16)
-    pdf.set_text_color(40, 40, 40)
     pdf.cell(0, 10, "Chat History", ln=True, align="C")
-
     pdf.set_font("Arial", '', 10)
     malaysia_time = datetime.now(pytz.timezone("Asia/Kuala_Lumpur")).strftime("%B %d, %Y %H:%M")
     pdf.cell(0, 10, f"Exported on {malaysia_time} (MYT)", ln=True, align="C")
@@ -165,32 +162,36 @@ def save_chat_to_pdf(chat_history):
         user_msg = strip_emojis(entry["user"]).strip()
         assistant_msg = remove_newlines(strip_emojis(entry["assistant"]).strip())
 
-        # ==== You: Box ====
+        pdf.set_font("Arial", '', 12)
+
+        # === YOU BOX ===
         label_user = "You:\n" + user_msg
         user_lines = pdf.multi_cell(190, 8, label_user, split_only=True)
-        box_height = 8 * len(user_lines) + 4
+        user_box_height = 8 * len(user_lines) + 4
+
+        if pdf.get_y() + user_box_height > 285:
+            pdf.add_page()
+
         y_start = pdf.get_y()
-        pdf.set_y(y_start)
-        pdf.set_draw_color(150, 150, 150)
-        pdf.rect(10, y_start, 190, box_height)
+        pdf.rect(10, y_start, 190, user_box_height)
         pdf.set_xy(12, y_start + 2)
-        pdf.set_font("Arial", '', 12)
-        pdf.set_text_color(0, 0, 0)
         pdf.multi_cell(0, 8, label_user)
         pdf.ln(4)
 
-        # ==== Assistant: Box ====
+        # === ASSISTANT BOX ===
         label_bot = "Assistant:\n" + assistant_msg
         bot_lines = pdf.multi_cell(190, 8, label_bot, split_only=True)
-        box_height = 8 * len(bot_lines) + 4
+        bot_box_height = 8 * len(bot_lines) + 4
+
+        if pdf.get_y() + bot_box_height > 285:
+            pdf.add_page()
+
         y_start = pdf.get_y()
-        pdf.set_y(y_start)
-        pdf.set_draw_color(150, 150, 150)
-        pdf.rect(10, y_start, 190, box_height)
+        pdf.rect(10, y_start, 190, bot_box_height)
         pdf.set_xy(12, y_start + 2)
-        pdf.set_font("Arial", '', 12)
         pdf.set_text_color(0, 102, 204)
         pdf.multi_cell(0, 8, label_bot)
+        pdf.set_text_color(0, 0, 0)
         pdf.ln(6)
 
     pdf_bytes = pdf.output(dest='S').encode('latin1')
