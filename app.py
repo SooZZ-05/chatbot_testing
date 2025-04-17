@@ -145,35 +145,38 @@ def save_chat_to_pdf(chat_history):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", 'B', 16)
-    pdf.cell(0, 10, "📘 Chat History", ln=True, align="C")
+    pdf.cell(0, 10, "Chat History", ln=True, align="C")
     pdf.ln(5)
 
     for idx, entry in enumerate(chat_history, 1):
         user_msg = strip_emojis(entry['user']).strip()
         bot_msg = strip_emojis(entry['assistant']).strip()
 
+        # User Message
         pdf.set_font("Arial", 'B', 12)
         pdf.set_text_color(33, 33, 33)
-        pdf.cell(0, 8, f"🧑 You:", ln=True)
+        pdf.cell(0, 8, "You:", ln=True)
         pdf.set_font("Arial", '', 12)
         pdf.set_text_color(0, 0, 0)
         pdf.multi_cell(0, 8, user_msg)
         pdf.ln(2)
 
+        # Bot Message
         pdf.set_font("Arial", 'B', 12)
         pdf.set_text_color(0, 102, 204)
-        pdf.cell(0, 8, f"🤖 Assistant:", ln=True)
+        pdf.cell(0, 8, "Assistant:", ln=True)
         pdf.set_font("Arial", '', 12)
         pdf.set_text_color(0, 0, 0)
         pdf.multi_cell(0, 8, bot_msg)
         pdf.ln(5)
 
         # Divider
-        pdf.set_draw_color(200, 200, 200)
+        pdf.set_draw_color(220, 220, 220)
         pdf.set_line_width(0.3)
         pdf.line(10, pdf.get_y(), 200, pdf.get_y())
         pdf.ln(5)
 
+    # Export safely
     pdf_bytes = pdf.output(dest='S').encode('latin1')
     return BytesIO(pdf_bytes)
     
