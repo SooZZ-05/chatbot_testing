@@ -175,10 +175,11 @@ def chunk_text(text, chunk_size=3000, overlap=500):
     return chunks
 
 def find_relevant_chunk(question, chunks):
-    documents = chunks + [question]
+    preprocessed_question = preprocess_text(question)  # 🔧 preprocess question
+    documents = chunks + [preprocessed_question]
     vectorizer = TfidfVectorizer().fit(documents)
     chunk_vectors = vectorizer.transform(chunks)
-    question_vector = vectorizer.transform([question])
+    question_vector = vectorizer.transform([preprocessed_question])
     similarities = cosine_similarity(question_vector, chunk_vectors).flatten()
     best_index = similarities.argmax()
     return chunks[best_index]
@@ -319,9 +320,12 @@ if hf_token and uploaded_files:
             with st.spinner("🤔 Thinking..."):
                 if is_comparison_query(question):
                     # Extract keywords from the question for comparison
-                    keywords = [word for word in word_tokenize(question) if word.isalpha() and len(word) > 2]
+                    keywords = [synonym_map.get(word.lower(), word.lower()) 
+                                for word in word_tokenize(question) if word.isalnum()]
                     table = generate_comparison_table(keywords, pdf_chunks)
-                    ai_reply = "Here’s a comparison based on the available data:\n\n" + table
+                    ai_reply = "Here’s a comparison based on the available data:\n\n"
+                    st.markdown(ai_reply)
+                    st.markdown(table)
                 else:
                     context = find_relevant_chunk(question, pdf_chunks)
                     ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
