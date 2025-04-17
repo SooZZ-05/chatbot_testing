@@ -1,10 +1,7 @@
+import os
 import nltk
-try:
-    nltk.data.find('corpora/wordnet')
-except LookupError:
-    nltk.download('wordnet')
-
 import streamlit as st
+from dotenv import load_dotenv
 import fitz  # PyMuPDF
 import re
 import requests
@@ -14,7 +11,17 @@ from difflib import get_close_matches
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-# ========== Greeting Logic ==========
+# ===== Load API Key =====
+load_dotenv()
+hf_token = os.getenv("OPENROUTER_API_KEY", st.secrets.get("OPENROUTER_API_KEY"))
+
+# ===== NLTK Resource Setup =====
+try:
+    nltk.data.find('corpora/wordnet')
+except LookupError:
+    nltk.download('wordnet')
+
+# ===== Greeting Logic =====
 lemmatizer = WordNetLemmatizer()
 
 greeting_responses = [
@@ -47,7 +54,7 @@ def is_greeting_or_smalltalk(user_input):
 def get_random_greeting():
     return random.choice(greeting_responses)
 
-# ========== PDF Handling ==========
+# ===== PDF Handling =====
 def extract_text_from_pdf(uploaded_file):
     doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
     text = ""
@@ -62,23 +69,19 @@ def chunk_text(text, chunk_size=3000, overlap=500):
     return chunks
 
 def find_relevant_chunk(question, chunks):
-    # Combine chunks and question for consistent vector space
     documents = chunks + [question]
     vectorizer = TfidfVectorizer().fit(documents)
-
     chunk_vectors = vectorizer.transform(chunks)
     question_vector = vectorizer.transform([question])
-
-    # Compute cosine similarity
     similarities = cosine_similarity(question_vector, chunk_vectors).flatten()
     best_index = similarities.argmax()
     return chunks[best_index]
 
-# ========== LLM Logic ==========
-def ask_llm_with_history(question, context, history, openrouter_api_key):
+# ===== LLM Logic =====
+def ask_llm_with_history(question, context, history, api_key):
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
-        "Authorization": f"Bearer {openrouter_api_key}",
+        "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
 
@@ -107,7 +110,7 @@ def ask_llm_with_history(question, context, history, openrouter_api_key):
     else:
         return f"❌ Error {response.status_code}: {response.text}"
 
-# ========== Emoji Formatting ==========
+# ===== Emoji Formatting =====
 def format_response(text):
     text = re.sub(r"(?<=[.!?])\s+(?=[A-Z])", "\n\n", text)
     text = re.sub(r"●", "\n\n●", text)
@@ -124,23 +127,20 @@ def format_response(text):
         if emoji not in used_emojis:
             text = re.sub(word, emoji, text, count=1, flags=re.IGNORECASE)
             used_emojis.add(emoji)
-
     text = re.sub(r'\n{3,}', '\n\n', text)
     return text.strip()
 
-# ========== Streamlit UI ==========
 def truncate_text(text, limit=1500):
     if len(text) <= limit:
         return text
     return text[:limit] + "..."
 
+# ===== Streamlit UI =====
 st.set_page_config(page_title="💻 Laptop Chatbot", page_icon="💬", layout="wide")
 st.title("💻 Laptop Recommendation Chatbot")
 
-hf_token = st.text_input("🔑 Enter your OpenRouter API Key", type="password")
 uploaded_file = st.file_uploader("📄 Upload a Laptop Specification PDF", type=["pdf"])
 
-# Initialize session state for conversation
 if "history" not in st.session_state:
     st.session_state.history = []
 
@@ -149,37 +149,32 @@ if hf_token and uploaded_file:
         document_text = extract_text_from_pdf(uploaded_file)
         pdf_chunks = chunk_text(document_text)
 
-    with st.container():
-        st.subheader("🧠 Chat with your PDF")
+    st.subheader("🧠 Chat with your PDF")
+    for entry in st.session_state.history:
+        with st.chat_message("user"):
+            st.markdown(entry["user"])
+        with st.chat_message("assistant"):
+            short_reply = truncate_text(entry["assistant"])
+            st.write(short_reply)
+            if len(entry["assistant"]) > 1500:
+                with st.expander("🔎 View full response"):
+                    st.write(entry["assistant"])
 
-        for entry in st.session_state.history:
-            with st.chat_message("user"):
-                st.markdown(entry["user"])
-            with st.chat_message("assistant"):
-                short_reply = truncate_text(entry["assistant"])
-                st.write(short_reply)
+    question = st.chat_input("💬 Your message")
+    if question:
+        if is_greeting_or_smalltalk(question):
+            greeting = get_random_greeting()
+            if "recommendation" not in greeting.lower() and "suggestion" not in greeting.lower():
+                greeting += "\n\n" + category_suggestion
+            ai_reply = greeting
+        else:
+            with st.spinner("🤔 Thinking..."):
+                context = find_relevant_chunk(question, pdf_chunks)
+                ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
 
-                if len(entry["assistant"]) > 1500:
-                    with st.expander("🔎 View full response"):
-                        st.write(entry["assistant"])
-
-        question = st.chat_input("💬 Your message")
-
-        if question:
-            if is_greeting_or_smalltalk(question):
-                greeting = get_random_greeting()
-                if "recommendation" not in greeting.lower() and "suggestion" not in greeting.lower():
-                    greeting += "\n\n" + category_suggestion
-                ai_reply = greeting
-            else:
-                with st.spinner("🤔 Thinking..."):
-                    context = find_relevant_chunk(question, pdf_chunks)
-                    ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
-
-            st.session_state.history.append({"user": question, "assistant": ai_reply})
-            st.rerun()
-
+        st.session_state.history.append({"user": question, "assistant": ai_reply})
+        st.rerun()
 elif not hf_token:
-    st.info("Please enter your OpenRouter API token to start chatting.")
+    st.error("🔐 API key not found.")
 elif not uploaded_file:
     st.info("Please upload a PDF with laptop specifications.")
