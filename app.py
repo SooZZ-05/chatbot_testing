@@ -21,11 +21,14 @@ load_dotenv()
 hf_token = os.getenv("OPENROUTER_API_KEY", st.secrets.get("OPENROUTER_API_KEY"))
 
 # ===== NLTK Resource Setup =====
+NLTK_DATA_DIR = os.path.join(os.path.expanduser("~"), "nltk_data")
+nltk.data.path.append(NLTK_DATA_DIR)
+
 for resource in ['punkt', 'stopwords', 'averaged_perceptron_tagger', 'wordnet']:
     try:
         nltk.data.find(f'tokenizers/{resource}' if resource == 'punkt' else f'corpora/{resource}')
     except LookupError:
-        nltk.download(resource)
+        nltk.download(resource, download_dir=NLTK_DATA_DIR)
 
 stop_words = set(stopwords.words('english'))
 lemmatizer = WordNetLemmatizer()
