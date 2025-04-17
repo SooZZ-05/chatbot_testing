@@ -148,44 +148,49 @@ def save_chat_to_pdf(chat_history):
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
 
-    # Header with Malaysia time
+    # ===== Header =====
     pdf.set_font("Arial", 'B', 16)
     pdf.set_text_color(40, 40, 40)
     pdf.cell(0, 10, "Chat History", ln=True, align="C")
+
     pdf.set_font("Arial", '', 10)
     malaysia_time = datetime.now(pytz.timezone("Asia/Kuala_Lumpur")).strftime("%B %d, %Y %H:%M")
     pdf.cell(0, 10, f"Exported on {malaysia_time} (MYT)", ln=True, align="C")
     pdf.ln(5)
 
-    for idx, entry in enumerate(chat_history, 1):
+    # ===== Chat Entries =====
+    for idx, entry in enumerate(chat_history):
         user_msg = strip_emojis(entry['user']).strip()
         bot_msg = strip_emojis(entry['assistant']).strip()
 
-        # Alternate backgrounds
-        bg_color = (245, 245, 245) if idx % 2 == 1 else (255, 255, 255)
+        # Alternate fill color per user/assistant pair
+        is_odd = idx % 2 == 0
+        r, g, b = (245, 245, 245) if is_odd else (255, 255, 255)
 
-        # User Message
-        pdf.set_fill_color(*bg_color)
+        # User
+        pdf.set_fill_color(r, g, b)
         pdf.set_font("Arial", 'B', 11)
         pdf.set_text_color(0, 0, 0)
         pdf.cell(0, 8, "You:", ln=True, fill=True)
         pdf.set_font("Arial", '', 11)
-        pdf.set_fill_color(*bg_color)
-        pdf.multi_cell(0, 8, user_msg, fill=True)
+        pdf.set_fill_color(r, g, b)
+        for line in user_msg.splitlines():
+            pdf.multi_cell(0, 8, line, fill=True)
         pdf.ln(1)
 
-        # Assistant Message
-        pdf.set_fill_color(*bg_color)
+        # Assistant
+        pdf.set_fill_color(r, g, b)
         pdf.set_font("Arial", 'B', 11)
         pdf.set_text_color(0, 102, 204)
         pdf.cell(0, 8, "Assistant:", ln=True, fill=True)
         pdf.set_font("Arial", '', 11)
         pdf.set_text_color(0, 0, 0)
-        pdf.set_fill_color(*bg_color)
-        pdf.multi_cell(0, 8, bot_msg, fill=True)
-        pdf.ln(4)
+        pdf.set_fill_color(r, g, b)
+        for line in bot_msg.splitlines():
+            pdf.multi_cell(0, 8, line, fill=True)
+        pdf.ln(3)
 
-        # Divider line
+        # Divider
         pdf.set_draw_color(210, 210, 210)
         pdf.set_line_width(0.3)
         pdf.line(10, pdf.get_y(), 200, pdf.get_y())
