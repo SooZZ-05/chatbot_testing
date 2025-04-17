@@ -140,7 +140,7 @@ def truncate_text(text, limit=1500):
     return text[:limit] + "..."
 
 # ===== Chat Saving Button =====
-def save_chat_to_pdf(chat_history):
+def save_chat_to_pdf(chat_history, max_words_per_page=300):
     def strip_emojis(text):
         return re.sub(r'[^\x00-\x7F]+', '', text)
 
@@ -149,7 +149,7 @@ def save_chat_to_pdf(chat_history):
 
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_auto_page_break(auto=False)  # manual control
+    pdf.set_auto_page_break(auto=False)
 
     pdf.set_font("Arial", 'B', 16)
     pdf.cell(0, 10, "Chat History", ln=True, align="C")
@@ -158,41 +158,45 @@ def save_chat_to_pdf(chat_history):
     pdf.cell(0, 10, f"Exported on {malaysia_time} (MYT)", ln=True, align="C")
     pdf.ln(5)
 
+    pdf.set_font("Arial", '', 12)
+    current_word_count = 0
+
     for entry in chat_history:
         user_msg = strip_emojis(entry["user"]).strip()
         assistant_msg = remove_newlines(strip_emojis(entry["assistant"]).strip())
 
-        pdf.set_font("Arial", '', 12)
+        user_words = len(user_msg.split())
+        assistant_words = len(assistant_msg.split())
+        pair_words = user_words + assistant_words
 
-        # === YOU BOX ===
-        label_user = "You:\n" + user_msg
+        # Start new page if limit exceeded
+        if current_word_count + pair_words > max_words_per_page:
+            pdf.add_page()
+            current_word_count = 0
+
+        # === You box ===
+        label_user = f"You:\n{user_msg}"
+        y_start_user = pdf.get_y()
         user_lines = pdf.multi_cell(190, 8, label_user, split_only=True)
         user_box_height = 8 * len(user_lines) + 4
-
-        if pdf.get_y() + user_box_height > 285:
-            pdf.add_page()
-
-        y_start = pdf.get_y()
-        pdf.rect(10, y_start, 190, user_box_height)
-        pdf.set_xy(12, y_start + 2)
+        pdf.rect(10, y_start_user, 190, user_box_height)
+        pdf.set_xy(12, y_start_user + 2)
         pdf.multi_cell(0, 8, label_user)
         pdf.ln(4)
 
-        # === ASSISTANT BOX ===
-        label_bot = "Assistant:\n" + assistant_msg
+        # === Assistant box ===
+        label_bot = f"Assistant:\n{assistant_msg}"
+        y_start_bot = pdf.get_y()
         bot_lines = pdf.multi_cell(190, 8, label_bot, split_only=True)
         bot_box_height = 8 * len(bot_lines) + 4
-
-        if pdf.get_y() + bot_box_height > 285:
-            pdf.add_page()
-
-        y_start = pdf.get_y()
-        pdf.rect(10, y_start, 190, bot_box_height)
-        pdf.set_xy(12, y_start + 2)
+        pdf.rect(10, y_start_bot, 190, bot_box_height)
+        pdf.set_xy(12, y_start_bot + 2)
         pdf.set_text_color(0, 102, 204)
         pdf.multi_cell(0, 8, label_bot)
         pdf.set_text_color(0, 0, 0)
         pdf.ln(6)
+
+        current_word_count += pair_words
 
     pdf_bytes = pdf.output(dest='S').encode('latin1')
     return BytesIO(pdf_bytes)
