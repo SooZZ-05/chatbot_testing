@@ -138,28 +138,45 @@ def truncate_text(text, limit=1500):
     return text[:limit] + "..."
 
 # ===== Chat Saving Button =====
-def strip_emojis(text):
-    return re.sub(r'[^\x00-\x7F]+', '', text)
-    
 def save_chat_to_pdf(chat_history):
     def strip_emojis(text):
         return re.sub(r'[^\x00-\x7F]+', '', text)
 
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Arial", size=12)
+    pdf.set_font("Arial", 'B', 16)
+    pdf.cell(0, 10, "📘 Chat History", ln=True, align="C")
+    pdf.ln(5)
 
-    for entry in chat_history:
-        user_text = strip_emojis(f"You: {entry['user']}")
-        bot_text = strip_emojis(f"Bot: {entry['assistant']}")
-        pdf.multi_cell(0, 10, user_text)
+    for idx, entry in enumerate(chat_history, 1):
+        user_msg = strip_emojis(entry['user']).strip()
+        bot_msg = strip_emojis(entry['assistant']).strip()
+
+        pdf.set_font("Arial", 'B', 12)
+        pdf.set_text_color(33, 33, 33)
+        pdf.cell(0, 8, f"🧑 You:", ln=True)
+        pdf.set_font("Arial", '', 12)
+        pdf.set_text_color(0, 0, 0)
+        pdf.multi_cell(0, 8, user_msg)
         pdf.ln(2)
-        pdf.multi_cell(0, 10, bot_text)
+
+        pdf.set_font("Arial", 'B', 12)
+        pdf.set_text_color(0, 102, 204)
+        pdf.cell(0, 8, f"🤖 Assistant:", ln=True)
+        pdf.set_font("Arial", '', 12)
+        pdf.set_text_color(0, 0, 0)
+        pdf.multi_cell(0, 8, bot_msg)
+        pdf.ln(5)
+
+        # Divider
+        pdf.set_draw_color(200, 200, 200)
+        pdf.set_line_width(0.3)
+        pdf.line(10, pdf.get_y(), 200, pdf.get_y())
         pdf.ln(5)
 
     pdf_bytes = pdf.output(dest='S').encode('latin1')
     return BytesIO(pdf_bytes)
-
+    
 # ===== Streamlit UI =====
 st.set_page_config(page_title="💻 Laptop Chatbot", page_icon="💬", layout="wide")
 st.title("💻 Laptop Recommendation Chatbot")
