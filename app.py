@@ -12,20 +12,23 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from fpdf import FPDF
 from io import BytesIO
+from nltk.corpus import stopwords
+from nltk import pos_tag, word_tokenize
+from nltk.corpus import wordnet
 
 # ===== Load API Key =====
 load_dotenv()
 hf_token = os.getenv("OPENROUTER_API_KEY", st.secrets.get("OPENROUTER_API_KEY"))
 
 # ===== NLTK Resource Setup =====
-try:
-    nltk.data.find('corpora/wordnet')
-except LookupError:
-    nltk.download('wordnet')
+nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('averaged_perceptron_tagger')
+nltk.download('wordnet')
 
-# ===== Greeting Logic =====
+stop_words = set(stopwords.words('english'))
 lemmatizer = WordNetLemmatizer()
-
+# ===== Greeting Logic =====
 greeting_responses = [
     "Hi there! How can I assist you with choosing a laptop today?",
     "Hello! Looking for something for work, study, or gaming?",
@@ -55,7 +58,100 @@ def is_greeting_or_smalltalk(user_input):
 
 def get_random_greeting():
     return random.choice(greeting_responses)
+    
+# === Helper for POS mapping ===
+def get_wordnet_pos(tag):
+    if tag.startswith('J'):
+        return wordnet.ADJ
+    elif tag.startswith('V'):
+        return wordnet.VERB
+    elif tag.startswith('N'):
+        return wordnet.NOUN
+    elif tag.startswith('R'):
+        return wordnet.ADV
+    else:
+        return wordnet.NOUN
 
+# === Domain-Specific Synonym Mapping ===
+synonym_map = {
+    "notebook": "laptop",
+    "macbook": "laptop",
+    "apple": "macbook",
+    "macos": "macbook",
+    "windows": "os",
+    "linux": "os",
+    "intel": "cpu",
+    "amd": "cpu",
+    "ryzen": "cpu",
+    "core": "cpu",
+    "processor": "cpu",
+    "cpu": "cpu",
+    "gpu": "graphics",
+    "graphics": "graphics",
+    "nvidia": "graphics",
+    "geforce": "graphics",
+    "radeon": "graphics",
+    "memory": "ram",
+    "ram": "ram",
+    "hdd": "storage",
+    "ssd": "storage",
+    "storage": "storage",
+    "battery": "battery",
+    "screen": "display",
+    "display": "display",
+    "resolution": "display",
+    "inch": "display",
+    "weight": "weight",
+    "portable": "weight",
+    "light": "weight",
+    "heavy": "weight",
+    "price": "price",
+    "cost": "price",
+    "budget": "price"
+}
+
+# === NLP Preprocessing ===
+def preprocess_text(text):
+    text = text.lower()
+    tokens = word_tokenize(text)
+    tokens = [t for t in tokens if t.isalnum()]
+    tokens = [t for t in tokens if t not in stop_words]
+    tagged = pos_tag(tokens)
+    lemmatized = [lemmatizer.lemmatize(word, get_wordnet_pos(tag)) for word, tag in tagged]
+
+    normalized = [synonym_map.get(word, word) for word in lemmatized]
+
+    return ' '.join(normalized)
+
+def is_comparison_query(query):
+    comparison_keywords = ["compare", "difference", "versus", "vs", "better than", "which is better"]
+    return any(kw in query.lower() for kw in comparison_keywords)
+
+def generate_comparison_table(keywords, chunks):
+    headers = ["Model", "Category", "CPU", "RAM", "Storage", "Display", "GPU", "Battery", "Weight", "Price"]
+    rows = []
+
+    for chunk in chunks:
+        match = any(kw.lower() in chunk.lower() for kw in keywords)
+        if match:
+            row = ["-"] * len(headers)
+            row[0] = next((kw for kw in keywords if kw.lower() in chunk.lower()), "Unknown")
+            for i, field in enumerate(headers[1:], 1):
+                pattern = re.search(f"{field}[^\\n]*", chunk, re.IGNORECASE)
+                if pattern:
+                    row[i] = pattern.group().split(":")[-1].strip()
+            rows.append(row)
+
+    if not rows:
+        return "⚠️ Could not extract detailed comparison."
+    
+    table_md = "| " + " | ".join(headers) + " |\n"
+    table_md += "| " + " | ".join(["---"] * len(headers)) + " |\n"
+    for row in rows:
+        table_md += "| " + " | ".join(row) + " |\n"
+    return table_md
+
+    
 # ===== PDF Handling =====
 def extract_text_from_pdf(uploaded_file):
     doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
@@ -63,6 +159,14 @@ def extract_text_from_pdf(uploaded_file):
     for page in doc:
         text += page.get_text()
     return text
+
+def process_multiple_pdfs(uploaded_files):
+    combined_text = ""
+    for file in uploaded_files:
+        raw = extract_text_from_pdf(file)
+        cleaned = preprocess_text(raw)
+        combined_text += cleaned + "\n\n"
+    return chunk_text(combined_text)
 
 def chunk_text(text, chunk_size=3000, overlap=500):
     chunks = []
@@ -184,15 +288,14 @@ def save_chat_to_pdf(chat_history):
 st.set_page_config(page_title="💻 Laptop Chatbot", page_icon="💬", layout="wide")
 st.title("💻 Laptop Recommendation Chatbot")
 
-uploaded_file = st.file_uploader("📄 Upload a Laptop Specification PDF", type=["pdf"])
+uploaded_files = st.file_uploader("📄 Upload One or More PDF Documents", type=["pdf"], accept_multiple_files=True)
 
 if "history" not in st.session_state:
     st.session_state.history = []
 
-if hf_token and uploaded_file:
-    with st.spinner("🔍 Extracting and processing your document..."):
-        document_text = extract_text_from_pdf(uploaded_file)
-        pdf_chunks = chunk_text(document_text)
+if hf_token and uploaded_files:
+    with st.spinner("🔍 Extracting and processing documents..."):
+        pdf_chunks = process_multiple_pdfs(uploaded_files)
 
     st.subheader("🧠 Chat with your PDF")
     for entry in st.session_state.history:
@@ -200,7 +303,7 @@ if hf_token and uploaded_file:
             st.markdown(entry["user"])
         with st.chat_message("assistant"):
             short_reply = truncate_text(entry["assistant"])
-            st.write(short_reply)
+            st.markdown(short_reply)
             if len(entry["assistant"]) > 1500:
                 with st.expander("🔎 View full response"):
                     st.write(entry["assistant"])
@@ -214,8 +317,14 @@ if hf_token and uploaded_file:
             ai_reply = greeting
         else:
             with st.spinner("🤔 Thinking..."):
-                context = find_relevant_chunk(question, pdf_chunks)
-                ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
+                if is_comparison_query(question):
+                    # Extract keywords from the question for comparison
+                    keywords = [word for word in word_tokenize(question) if word.isalpha() and len(word) > 2]
+                    table = generate_comparison_table(keywords, pdf_chunks)
+                    ai_reply = "Here’s a comparison based on the available data:\n\n" + table
+                else:
+                    context = find_relevant_chunk(question, pdf_chunks)
+                    ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
 
         st.session_state.history.append({"user": question, "assistant": ai_reply})
         st.rerun()
@@ -237,7 +346,7 @@ if hf_token and uploaded_file:
                 
 elif not hf_token:
     st.error("🔐 API key not found.")
-elif not uploaded_file:
+elif not uploaded_files:
     st.info("Please upload a PDF with laptop specifications.")
 
 
