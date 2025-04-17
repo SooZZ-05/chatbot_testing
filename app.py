@@ -12,6 +12,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from fpdf import FPDF
 from io import BytesIO
+from datetime import datetime
 
 # ===== Load API Key =====
 load_dotenv()
@@ -144,43 +145,52 @@ def save_chat_to_pdf(chat_history):
 
     pdf = FPDF()
     pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+
+    # ===== Header with Title and Timestamp =====
     pdf.set_font("Arial", 'B', 16)
+    pdf.set_text_color(40, 40, 40)
     pdf.cell(0, 10, "Chat History", ln=True, align="C")
-    pdf.cell(0, 10, "Chat History", ln=True, align="C")
+    pdf.set_font("Arial", '', 10)
+    timestamp = datetime.now().strftime("%B %d, %Y %H:%M")
+    pdf.cell(0, 10, f"Exported on {timestamp}", ln=True, align="C")
     pdf.ln(5)
 
+    # ===== Loop Through Chat History =====
     for idx, entry in enumerate(chat_history, 1):
         user_msg = strip_emojis(entry['user']).strip()
         bot_msg = strip_emojis(entry['assistant']).strip()
 
-        # User Message
-        pdf.set_font("Arial", 'B', 12)
-        pdf.set_text_color(33, 33, 33)
-        pdf.cell(0, 8, f"You:", ln=True)
+        # Alternate background
+        if idx % 2 == 1:
+            pdf.set_fill_color(245, 245, 245)
+        else:
+            pdf.set_fill_color(255, 255, 255)
+
+        # User Message Box
+        pdf.set_font("Arial", 'B', 11)
+        pdf.set_text_color(0, 0, 0)
         pdf.cell(0, 8, "You:", ln=True)
-        pdf.set_font("Arial", '', 12)
-        pdf.set_text_color(0, 0, 0)
-        pdf.multi_cell(0, 8, user_msg)
-        pdf.ln(2)
+        pdf.set_font("Arial", '', 11)
+        pdf.multi_cell(0, 8, user_msg, fill=True)
+        pdf.ln(1)
 
-        # Bot Message
-        pdf.set_font("Arial", 'B', 12)
+        # Assistant Message Box
+        pdf.set_font("Arial", 'B', 11)
         pdf.set_text_color(0, 102, 204)
-        pdf.cell(0, 8, f"Assistant:", ln=True)
         pdf.cell(0, 8, "Assistant:", ln=True)
-        pdf.set_font("Arial", '', 12)
+        pdf.set_font("Arial", '', 11)
         pdf.set_text_color(0, 0, 0)
-        pdf.multi_cell(0, 8, bot_msg)
-        pdf.ln(5)
+        pdf.multi_cell(0, 8, bot_msg, fill=True)
+        pdf.ln(4)
 
-        # Divider
-        pdf.set_draw_color(200, 200, 200)
-        pdf.set_draw_color(220, 220, 220)
+        # Divider line
+        pdf.set_draw_color(210, 210, 210)
         pdf.set_line_width(0.3)
         pdf.line(10, pdf.get_y(), 200, pdf.get_y())
-        pdf.ln(5)
+        pdf.ln(4)
 
-    # Export safely
+    # ===== Final Output =====
     pdf_bytes = pdf.output(dest='S').encode('latin1')
     return BytesIO(pdf_bytes)
 
