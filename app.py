@@ -197,18 +197,18 @@ if hf_token and uploaded_file:
 
     #save chat to pdf
     with st.sidebar:
-    st.markdown("### 💬 Options")
-    if st.session_state.history:
-        pdf_file = save_chat_to_pdf(st.session_state.history)
-        st.download_button(
-            label="📥 Download PDF",
-            data=pdf_file,
-            file_name="chat_history.pdf",
-            mime="application/pdf",
-            use_container_width=True
-        )
-    else:
-        st.info("No conversation to download yet!")
+        st.markdown("### 💬 Options")
+        if st.session_state.history:
+            pdf_file = save_chat_to_pdf(st.session_state.history)
+            st.download_button(
+                label="📥 Download PDF",
+                data=pdf_file,
+                file_name="chat_history.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+        else:
+            st.info("No conversation to download yet!")
                 
 elif not hf_token:
     st.error("🔐 API key not found.")
