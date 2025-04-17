@@ -141,29 +141,19 @@ def truncate_text(text, limit=1500):
 def strip_emojis(text):
     return re.sub(r'[^\x00-\x7F]+', '', text)
     
-def save_chat_to_pdf(history):
+def save_chat_to_pdf(chat_history):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
 
-    pdf.cell(200, 10, txt="Chat History", ln=True, align="C")
-    pdf.ln(10)
-
-    for entry in history:
-        user_msg = strip_emojis(entry['user'])
-        assistant_msg = strip_emojis(entry['assistant'])
-
-        pdf.set_font("Arial", style="B", size=12)
-        pdf.multi_cell(0, 10, txt=f"You: {user_msg}")
-        pdf.ln(1)
-        pdf.set_font("Arial", style="", size=12)
-        pdf.multi_cell(0, 10, txt=f"Assistant: {assistant_msg}")
+    for entry in chat_history:
+        pdf.multi_cell(0, 10, f"👤 You: {entry['user']}")
+        pdf.ln(2)
+        pdf.multi_cell(0, 10, f"🤖 Bot: {entry['assistant']}")
         pdf.ln(5)
 
-    pdf_output = BytesIO()
-    pdf.output(pdf_output)
-    pdf_output.seek(0)
-    return pdf_output
+    pdf_bytes = pdf.output(dest='S').encode('latin1')
+    return BytesIO(pdf_bytes)
 
 # ===== Streamlit UI =====
 st.set_page_config(page_title="💻 Laptop Chatbot", page_icon="💬", layout="wide")
@@ -207,19 +197,18 @@ if hf_token and uploaded_file:
 
     #save chat to pdf
     with st.sidebar:
-        st.markdown("### 💬 Options")
-        if st.button("💾 Save Chat to PDF"):
-            if st.session_state.history:
-                pdf_file = save_chat_to_pdf(st.session_state.history)
-                st.download_button(
-                    label="📥 Download PDF",
-                    data=pdf_file,
-                    file_name="chat_history.pdf",
-                    mime="application/pdf",
-                    use_container_width=True
-                )
-            else:
-                st.warning("No conversation to save yet!")
+    st.markdown("### 💬 Options")
+    if st.session_state.history:
+        pdf_file = save_chat_to_pdf(st.session_state.history)
+        st.download_button(
+            label="📥 Download PDF",
+            data=pdf_file,
+            file_name="chat_history.pdf",
+            mime="application/pdf",
+            use_container_width=True
+        )
+    else:
+        st.info("No conversation to download yet!")
                 
 elif not hf_token:
     st.error("🔐 API key not found.")
