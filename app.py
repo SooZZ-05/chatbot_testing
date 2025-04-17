@@ -10,6 +10,8 @@ from nltk.stem import WordNetLemmatizer
 from difflib import get_close_matches
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+from fpdf import FPDF
+from io import BytesIO
 
 # ===== Load API Key =====
 load_dotenv()
@@ -135,6 +137,28 @@ def truncate_text(text, limit=1500):
         return text
     return text[:limit] + "..."
 
+# ===== Chat Saving Button =====
+def save_chat_to_pdf(history):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+
+    pdf.cell(200, 10, txt="💬 Chat History", ln=True, align="C")
+    pdf.ln(10)
+
+    for entry in history:
+        pdf.set_font("Arial", style="B", size=12)
+        pdf.multi_cell(0, 10, txt=f"👤 You: {entry['user']}")
+        pdf.ln(1)
+        pdf.set_font("Arial", size=12)
+        pdf.multi_cell(0, 10, txt=f"🤖 Assistant: {entry['assistant']}")
+        pdf.ln(5)
+
+    pdf_output = BytesIO()
+    pdf.output(pdf_output)
+    pdf_output.seek(0)
+    return pdf_output
+
 # ===== Streamlit UI =====
 st.set_page_config(page_title="💻 Laptop Chatbot", page_icon="💬", layout="wide")
 st.title("💻 Laptop Recommendation Chatbot")
@@ -174,7 +198,27 @@ if hf_token and uploaded_file:
 
         st.session_state.history.append({"user": question, "assistant": ai_reply})
         st.rerun()
+
+    #save chat to pdf
+    with st.sidebar:
+        st.markdown("### 💬 Options")
+        if st.button("💾 Save Chat to PDF"):
+            if st.session_state.history:
+                pdf_file = save_chat_to_pdf(st.session_state.history)
+                st.download_button(
+                    label="📥 Download PDF",
+                    data=pdf_file,
+                    file_name="chat_history.pdf",
+                    mime="application/pdf",
+                    use_container_width=True
+                )
+            else:
+                st.warning("No conversation to save yet!")
+                
 elif not hf_token:
     st.error("🔐 API key not found.")
 elif not uploaded_file:
     st.info("Please upload a PDF with laptop specifications.")
+
+
+
