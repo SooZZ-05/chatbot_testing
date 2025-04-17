@@ -140,7 +140,17 @@ def truncate_text(text, limit=1500):
     return text[:limit] + "..."
 
 # ===== Chat Saving Button =====
-def save_chat_to_pdf(chat_history, max_words_per_page=300):
+def estimate_multicell_height(pdf, text, width, line_height):
+    lines = pdf.multi_cell(width, line_height, text, split_only=True)
+    return len(lines) * line_height + 4  # +4 for padding
+
+def save_chat_to_pdf(chat_history):
+    from fpdf import FPDF
+    from datetime import datetime
+    import pytz
+    from io import BytesIO
+    import re
+
     def strip_emojis(text):
         return re.sub(r'[^\x00-\x7F]+', '', text)
 
@@ -150,7 +160,15 @@ def save_chat_to_pdf(chat_history, max_words_per_page=300):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_auto_page_break(auto=False)
+    page_height = 297  # A4 height in mm
+    margin_top = 10
+    margin_bottom = 10
+    usable_height = page_height - margin_top - margin_bottom
+    line_height = 8
+    box_spacing = 6
+    box_width = 190
 
+    # Header
     pdf.set_font("Arial", 'B', 16)
     pdf.cell(0, 10, "Chat History", ln=True, align="C")
     pdf.set_font("Arial", '', 10)
@@ -159,45 +177,40 @@ def save_chat_to_pdf(chat_history, max_words_per_page=300):
     pdf.ln(5)
 
     pdf.set_font("Arial", '', 12)
-    current_word_count = 0
 
     for entry in chat_history:
         user_msg = strip_emojis(entry["user"]).strip()
         assistant_msg = remove_newlines(strip_emojis(entry["assistant"]).strip())
 
-        user_words = len(user_msg.split())
-        assistant_words = len(assistant_msg.split())
-        pair_words = user_words + assistant_words
-
-        # Start new page if limit exceeded
-        if current_word_count + pair_words > max_words_per_page:
-            pdf.add_page()
-            current_word_count = 0
-
-        # === You box ===
         label_user = f"You:\n{user_msg}"
-        y_start_user = pdf.get_y()
-        user_lines = pdf.multi_cell(190, 8, label_user, split_only=True)
-        user_box_height = 8 * len(user_lines) + 4
-        pdf.rect(10, y_start_user, 190, user_box_height)
-        pdf.set_xy(12, y_start_user + 2)
-        pdf.multi_cell(0, 8, label_user)
+        label_assistant = f"Assistant:\n{assistant_msg}"
+
+        # Estimate heights
+        user_box_height = estimate_multicell_height(pdf, label_user, box_width, line_height)
+        assistant_box_height = estimate_multicell_height(pdf, label_assistant, box_width, line_height)
+        total_pair_height = user_box_height + assistant_box_height + box_spacing
+
+        # If not enough space, start new page
+        if pdf.get_y() + total_pair_height > usable_height:
+            pdf.add_page()
+
+        # Render You box
+        y_start = pdf.get_y()
+        pdf.rect(10, y_start, box_width, user_box_height)
+        pdf.set_xy(12, y_start + 2)
+        pdf.multi_cell(0, line_height, label_user)
+        pdf.ln(2)
+
+        # Render Assistant box
+        y_start = pdf.get_y()
+        pdf.rect(10, y_start, box_width, assistant_box_height)
+        pdf.set_xy(12, y_start + 2)
+        pdf.set_text_color(0, 102, 204)
+        pdf.multi_cell(0, line_height, label_assistant)
+        pdf.set_text_color(0, 0, 0)
         pdf.ln(4)
 
-        # === Assistant box ===
-        label_bot = f"Assistant:\n{assistant_msg}"
-        y_start_bot = pdf.get_y()
-        bot_lines = pdf.multi_cell(190, 8, label_bot, split_only=True)
-        bot_box_height = 8 * len(bot_lines) + 4
-        pdf.rect(10, y_start_bot, 190, bot_box_height)
-        pdf.set_xy(12, y_start_bot + 2)
-        pdf.set_text_color(0, 102, 204)
-        pdf.multi_cell(0, 8, label_bot)
-        pdf.set_text_color(0, 0, 0)
-        pdf.ln(6)
-
-        current_word_count += pair_words
-
+    # Output PDF
     pdf_bytes = pdf.output(dest='S').encode('latin1')
     return BytesIO(pdf_bytes)
     
