@@ -39,13 +39,9 @@ greeting_responses = [
 
 greeting_keywords = [
     "hi", "hello", "hey", "heyy", "helloo", "hellooo", "helo", "hii", "yo", "hiya", "sup", "what's up",
-    "howdy", "good morning", "good evening", "good afternoon", "how are you", "how's it going"
+    "howdy", "good morning", "good evening", "good afternoon", "how are you", "how's it going",
+    "bye", "goodbye", "see ya", "byebye"
 ]
-
-greeting_keywords = [
-     "bye", "goodbye", "see ya", "byebye"
-]
-
 
 category_suggestion = (
     "Would you like suggestions for laptops used in:\n\n"
