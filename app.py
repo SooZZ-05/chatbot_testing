@@ -63,30 +63,14 @@ def get_random_greeting():
     return random.choice(greeting_responses)
 
 def is_farewell(user_input):
+    farewells = [
+        "bye", "goodbye", "see ya", "see you", "later",
+        "i'm done", "thank you", "thanks, that's all", "talk to you later"
+    ]
     user_input = user_input.lower().strip()
-    words = re.findall(r'\w+', user_input)
-    for word in words:
-        if word in farewell_keywords:
-            return True
-        close_matches = get_close_matches(word, farewell_keywords, cutoff=0.7)
-        if close_matches:
-            return True
-    return False
-    
-# if is_farewell(question):
-#     ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
-# elif is_greeting_or_smalltalk(question):
-#     greeting = get_random_greeting()
-#     if "recommendation" not in greeting.lower() and "suggestion" not in greeting.lower():
-#         greeting += "\n\n" + category_suggestion
-#     ai_reply = greeting
-# else:
-#     with st.spinner("🤔 Thinking..."):
-#         context = find_relevant_chunk(question, pdf_chunks)
-#         ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
+    close = get_close_matches(user_input, farewells, cutoff=0.6)
+    return bool(close)
 
-# question = st.session_state.history.append({"user": question, "assistant": ai_reply})
-# st.rerun()
 
 # ===== PDF Handling =====
 def extract_text_from_pdf(uploaded_file):
@@ -276,6 +260,9 @@ if hf_token and uploaded_file:
             if "recommendation" not in greeting.lower() and "suggestion" not in greeting.lower():
                 greeting += "\n\n" + category_suggestion
             ai_reply = greeting
+             # Farewell check
+        elif is_farewell(question):
+            ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
         else:
             with st.spinner("🤔 Thinking..."):
                 context = find_relevant_chunk(question, pdf_chunks)
