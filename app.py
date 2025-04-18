@@ -73,8 +73,7 @@ def is_farewell(user_input):
             return True
     return False
     
-
-if is_farewell(question):
+if is_farewell(user_input):
     ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
 elif is_greeting_or_smalltalk(question):
     greeting = get_random_greeting()
