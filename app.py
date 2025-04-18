@@ -39,8 +39,11 @@ greeting_responses = [
 
 greeting_keywords = [
     "hi", "hello", "hey", "heyy", "helloo", "hellooo", "helo", "hii", "yo", "hiya", "sup", "what's up",
-    "howdy", "good morning", "good evening", "good afternoon", "how are you", "how's it going",
-    "bye", "goodbye", "see ya", "byebye"
+    "howdy", "good morning", "good evening", "good afternoon", "how are you", "how's it going"
+]
+
+farewell_keywords = [
+    "bye", "goodbye", "see ya", "byebye", "cya", "farewell", "take care", "later"
 ]
 
 category_suggestion = (
@@ -59,18 +62,32 @@ def is_greeting_or_smalltalk(user_input):
 def get_random_greeting():
     return random.choice(greeting_responses)
 
-def normalize_input(user_input):
-    corrections = {
-        "byebye": "bye",
-        "helo": "hello",
-        "heyy": "hey",
-        "hii": "hi"
-    }
-    for wrong, right in corrections.items():
-        user_input = user_input.replace(wrong, right)
-    return user_input
+def is_farewell(user_input):
+    user_input = user_input.lower().strip()
+    words = re.findall(r'\w+', user_input)
+    for word in words:
+        if word in farewell_keywords:
+            return True
+        close_matches = get_close_matches(word, farewell_keywords, cutoff=0.7)
+        if close_matches:
+            return True
+    return False
+    
 
-user_input = normalize_input(user_input.lower().strip())
+if is_farewell(question):
+    ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
+elif is_greeting_or_smalltalk(question):
+    greeting = get_random_greeting()
+    if "recommendation" not in greeting.lower() and "suggestion" not in greeting.lower():
+        greeting += "\n\n" + category_suggestion
+    ai_reply = greeting
+else:
+    with st.spinner("🤔 Thinking..."):
+        context = find_relevant_chunk(question, pdf_chunks)
+        ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
+
+st.session_state.history.append({"user": question, "assistant": ai_reply})
+st.rerun()
 
 # ===== PDF Handling =====
 def extract_text_from_pdf(uploaded_file):
