@@ -42,6 +42,11 @@ greeting_keywords = [
     "howdy", "good morning", "good evening", "good afternoon", "how are you", "how's it going"
 ]
 
+greeting_keywords = [
+     "bye", "goodbye", "see ya", "byebye"
+]
+
+
 category_suggestion = (
     "Would you like suggestions for laptops used in:\n\n"
     "1. Study 📚\n"
@@ -54,9 +59,22 @@ def is_greeting_or_smalltalk(user_input):
     user_input = user_input.lower().strip()
     close = get_close_matches(user_input, greeting_keywords, cutoff=0.6)
     return bool(close)
-
+    
 def get_random_greeting():
     return random.choice(greeting_responses)
+
+def normalize_input(user_input):
+    corrections = {
+        "byebye": "bye",
+        "helo": "hello",
+        "heyy": "hey",
+        "hii": "hi"
+    }
+    for wrong, right in corrections.items():
+        user_input = user_input.replace(wrong, right)
+    return user_input
+
+user_input = normalize_input(user_input.lower().strip())
 
 # ===== PDF Handling =====
 def extract_text_from_pdf(uploaded_file):
