@@ -85,8 +85,8 @@ def is_farewell(user_input):
 #         context = find_relevant_chunk(question, pdf_chunks)
 #         ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
 
-question = st.session_state.history.append({"user": question, "assistant": ai_reply})
-st.rerun()
+# question = st.session_state.history.append({"user": question, "assistant": ai_reply})
+# st.rerun()
 
 # ===== PDF Handling =====
 def extract_text_from_pdf(uploaded_file):
