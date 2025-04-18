@@ -73,17 +73,17 @@ def is_farewell(user_input):
             return True
     return False
     
-if is_farewell(user_input):
-    ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
-elif is_greeting_or_smalltalk(question):
-    greeting = get_random_greeting()
-    if "recommendation" not in greeting.lower() and "suggestion" not in greeting.lower():
-        greeting += "\n\n" + category_suggestion
-    ai_reply = greeting
-else:
-    with st.spinner("🤔 Thinking..."):
-        context = find_relevant_chunk(question, pdf_chunks)
-        ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
+# if is_farewell(user_input):
+#     ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
+# elif is_greeting_or_smalltalk(question):
+#     greeting = get_random_greeting()
+#     if "recommendation" not in greeting.lower() and "suggestion" not in greeting.lower():
+#         greeting += "\n\n" + category_suggestion
+#     ai_reply = greeting
+# else:
+#     with st.spinner("🤔 Thinking..."):
+#         context = find_relevant_chunk(question, pdf_chunks)
+#         ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
 
 st.session_state.history.append({"user": question, "assistant": ai_reply})
 st.rerun()
