@@ -280,7 +280,7 @@ if hf_token and uploaded_file:
         # Farewell check
         else: 
             is_farewell(question):
-                ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!
+                ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
             with st.spinner("🤔 Thinking..."):
                 context = find_relevant_chunk(question, pdf_chunks)
                 ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
