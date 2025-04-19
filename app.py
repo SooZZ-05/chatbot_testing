@@ -47,22 +47,6 @@ farewells = [
         "i'm done", "thank you", "thanks, that's all", "talk to you later",
         "exit", "quit", "close", "end", "good night", "goodbye for now"
     ]
-
-# if question.strip() in valid_choices:
-#     if question.strip(category_suggestion) == "1":
-#         ai_reply = "📚 Great! You're looking for a laptop for study. Let me help with that!"
-#     elif question.strip() == "2":
-#         ai_reply = "💼 Cool! Business laptops, coming up!"
-#     elif question.strip() == "3":
-#         ai_reply = "🎮 Sweet! Let’s look at some gaming beasts!"
-# else:
-#     ai_reply = (
-#         "❌ Oops! Please choose a valid option:\n\n"
-#         "1. Study 📚\n"
-#         "2. Business 💼\n"
-#         "3. Gaming 🎮"
-#     )
-# valid_choices = ["1", "2", "3"]
     
 category_suggestion = (
     "Would you like suggestions for laptops used in:\n\n"
@@ -76,11 +60,21 @@ if is_greeting_or_smalltalk(question):
     greeting = get_random_greeting()
     ai_reply = greeting + "\n\n" + category_suggestion
 
-    # Wait for user to enter a number (1-3)
-    if question.strip() in ["1", "2", "3"]:
-        # handle valid selections
+    # Now check if the user's reply is 1, 2, or 3
+    if question.strip() == "1":
+        ai_reply = "📚 Great! You're looking for a laptop for study. Let me help with that!"
+    elif question.strip() == "2":
+        ai_reply = "💼 Cool! Business laptops, coming up!"
+    elif question.strip() == "3":
+        ai_reply = "🎮 Sweet! Let’s look at some gaming beasts!"
     else:
-        ai_reply = "❌ That's not a valid option. Please choose 1, 2, or 3."
+        ai_reply = (
+            "❌ That's not a valid option. Please choose one of the following:\n\n"
+            "1. Study 📚\n"
+            "2. Business 💼\n"
+            "3. Gaming 🎮"
+        )
+
 
 
 def is_greeting_or_smalltalk(user_input):
