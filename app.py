@@ -263,7 +263,7 @@ if hf_token and uploaded_file:
                 greeting += "\n\n" + category_suggestion
             ai_reply = greeting
 
-        elif:
+        else:
             if st.session_state.get("awaiting_category", False):
                 if question.strip() == "1":
                     ai_reply = "📚 For studying, I recommend a lightweight laptop with good battery life and 8GB RAM."
