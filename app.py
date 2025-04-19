@@ -69,6 +69,22 @@ def is_farewell(user_input):
     user_input = user_input.lower().strip()
     close = get_close_matches(user_input, farewells, cutoff=0.6)
     return bool(close)
+valid_choices = ["1", "2", "3"]
+
+if question.strip() in valid_choices:
+    if question.strip() == "1":
+        ai_reply = "📚 Great! You're looking for a laptop for study. Let me help with that!"
+    elif question.strip() == "2":
+        ai_reply = "💼 Cool! Business laptops, coming up!"
+    elif question.strip() == "3":
+        ai_reply = "🎮 Sweet! Let’s look at some gaming beasts!"
+else:
+    ai_reply = (
+        "❌ Oops! Please choose a valid option:\n\n"
+        "1. Study 📚\n"
+        "2. Business 💼\n"
+        "3. Gaming 🎮"
+    )
 
 
 # ===== PDF Handling =====
