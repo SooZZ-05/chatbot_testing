@@ -65,7 +65,7 @@ def is_greeting_or_smalltalk(user_input):
     close = get_close_matches(user_input, greeting_keywords, cutoff=0.6)
     return bool(close)
 
-if is_greeting_or_smalltalk(question):
+if is_greeting_or_smalltalk(user_input):
     greeting = get_random_greeting()
     ai_reply = greeting + "\n\n" + category_suggestion
 
