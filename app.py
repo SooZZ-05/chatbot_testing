@@ -77,10 +77,10 @@ if is_greeting_or_smalltalk(question):
 
 
 
-def is_greeting_or_smalltalk(user_input):
-    user_input = user_input.lower().strip()
-    close = get_close_matches(user_input, greeting_keywords, cutoff=0.6)
-    return bool(close)
+# def is_greeting_or_smalltalk(user_input):
+#     user_input = user_input.lower().strip()
+#     close = get_close_matches(user_input, greeting_keywords, cutoff=0.6)
+#     return bool(close)
     
 def get_random_greeting():
     return random.choice(greeting_responses)
