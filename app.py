@@ -56,16 +56,12 @@ category_suggestion = (
     "Just let me know! 😃"
 )
 
-
-
-
-
 def is_greeting_or_smalltalk(user_input):
     user_input = user_input.lower().strip()
     close = get_close_matches(user_input, greeting_keywords, cutoff=0.6)
     return bool(close)
 
-if is_greeting_or_smalltalk(user_input):
+if is_greeting_or_smalltalk():
     greeting = get_random_greeting()
     ai_reply = greeting + "\n\n" + category_suggestion
 
