@@ -48,12 +48,12 @@ farewells = [
         "exit", "quit", "close", "end", "good night", "goodbye for now"
     ]
 
-if question.strip() in valid_choices:
-    if question.strip() == "1":
+if question.strip(category_suggestion) in valid_choices:
+    if question.strip(category_suggestion) == "1":
         ai_reply = "📚 Great! You're looking for a laptop for study. Let me help with that!"
-    elif question.strip() == "2":
+    elif question.strip(category_suggestion) == "2":
         ai_reply = "💼 Cool! Business laptops, coming up!"
-    elif question.strip() == "3":
+    elif question.strip(category_suggestion) == "3":
         ai_reply = "🎮 Sweet! Let’s look at some gaming beasts!"
 else:
     ai_reply = (
@@ -62,6 +62,7 @@ else:
         "2. Business 💼\n"
         "3. Gaming 🎮"
     )
+valid_choices = ["1", "2", "3"]
     
 category_suggestion = (
     "Would you like suggestions for laptops used in:\n\n"
@@ -84,7 +85,7 @@ def is_farewell(user_input):
     user_input = user_input.lower().strip()
     close = get_close_matches(user_input, farewells, cutoff=0.6)
     return bool(close)
-valid_choices = ["1", "2", "3"]
+
 
 
 
