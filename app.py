@@ -56,7 +56,7 @@ category_suggestion = (
     "Just let me know! 😃"
 )
 
-if is_greeting_or_smalltalk(question):
+if is_greeting_or_smalltalk(user_input):
     greeting = get_random_greeting()
     ai_reply = greeting + "\n\n" + category_suggestion
 
