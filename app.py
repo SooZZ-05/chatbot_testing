@@ -60,8 +60,10 @@ def is_greeting_or_smalltalk(user_input):
     user_input = user_input.lower().strip()
     close = get_close_matches(user_input, greeting_keywords, cutoff=0.6)
     return bool(close)
+    
+question = st.chat_input("💬 Your message")
 
-if is_greeting_or_smalltalk():
+if is_greeting_or_smalltalk(question):
     greeting = get_random_greeting()
     ai_reply = greeting + "\n\n" + category_suggestion
 
@@ -80,8 +82,8 @@ if is_greeting_or_smalltalk():
             "3. Gaming 🎮"
         )
     
-def get_random_greeting():
-    return random.choice(greeting_responses)
+# def get_random_greeting():
+#     return random.choice(greeting_responses)
 
 # Define farewell checking function
 def is_farewell(user_input):
