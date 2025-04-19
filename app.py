@@ -42,9 +42,11 @@ greeting_keywords = [
     "howdy", "good morning", "good evening", "good afternoon", "how are you", "how's it going"
 ]
 
-farewell_keywords = [
-    "bye", "goodbye", "see ya", "byebye", "cya", "farewell", "take care", "later"
-]
+farewells = [
+        "hye", "bye", "goodbye", "see ya", "see you", "later",
+        "i'm done", "thank you", "thanks, that's all", "talk to you later",
+        "exit", "quit", "close", "end", "good night", "goodbye for now"
+    ]
 
 category_suggestion = (
     "Would you like suggestions for laptops used in:\n\n"
@@ -64,11 +66,6 @@ def get_random_greeting():
 
 # Define farewell checking function
 def is_farewell(user_input):
-    farewells = [
-        "hye", "bye", "goodbye", "see ya", "see you", "later",
-        "i'm done", "thank you", "thanks, that's all", "talk to you later",
-        "exit", "quit", "close", "end", "good night", "goodbye for now"
-    ]
     user_input = user_input.lower().strip()
     close = get_close_matches(user_input, farewells, cutoff=0.6)
     return bool(close)
