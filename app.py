@@ -57,30 +57,9 @@ category_suggestion = (
 )
 
 def is_greeting_or_smalltalk(user_input):
-    # user_input = user_input.lower().strip()
+    user_input = user_input.lower().strip()
     close = get_close_matches(user_input, greeting_keywords, cutoff=0.6)
     return bool(close)
-    
-question = st.chat_input("💬 Your message")
-
-if is_greeting_or_smalltalk(question):
-    greeting = get_random_greeting()
-    ai_reply = greeting + "\n\n" + category_suggestion
-
-    # Now check if the user's reply is 1, 2, or 3
-    if question.strip() == "1":
-        ai_reply = "📚 Great! You're looking for a laptop for study. Let me help with that!"
-    elif question.strip() == "2":
-        ai_reply = "💼 Cool! Business laptops, coming up!"
-    elif question.strip() == "3":
-        ai_reply = "🎮 Sweet! Let’s look at some gaming beasts!"
-    else:
-        ai_reply = (
-            "❌ That's not a valid option. Please choose one of the following:\n\n"
-            "1. Study 📚\n"
-            "2. Business 💼\n"
-            "3. Gaming 🎮"
-        )
     
 def get_random_greeting():
     return random.choice(greeting_responses)
@@ -277,22 +256,49 @@ if hf_token and uploaded_file:
                     st.write(entry["assistant"])
 
     question = st.chat_input("💬 Your message")
-    if question:
-        if is_greeting_or_smalltalk(question):
-            greeting = get_random_greeting()
-            if "recommendation" not in greeting.lower() and "suggestion" not in greeting.lower():
-                greeting += "\n\n" + category_suggestion
-            ai_reply = greeting
-             # Farewell check
-        elif is_farewell(question):
-            ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
-        else:
-            with st.spinner("🤔 Thinking..."):
-                context = find_relevant_chunk(question, pdf_chunks)
-                ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
+    # if question:
+    #     if is_greeting_or_smalltalk(question):
+    #         greeting = get_random_greeting()
+    #         if "recommendation" not in greeting.lower() and "suggestion" not in greeting.lower():
+    #             greeting += "\n\n" + category_suggestion
+    #         ai_reply = greeting
+    #          # Farewell check
+    #     elif is_farewell(question):
+    #         ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
+    #     else:
+    #         with st.spinner("🤔 Thinking..."):
+    #             context = find_relevant_chunk(question, pdf_chunks)
+    #             ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
 
-        st.session_state.history.append({"user": question, "assistant": ai_reply})
-        st.rerun()
+    #     st.session_state.history.append({"user": question, "assistant": ai_reply})
+    #     st.rerun()
+
+    if question:
+    if is_farewell(question):
+        st.write("👋 Goodbye! Come back if you need laptop advice.")
+        st.session_state.awaiting_category = False
+
+    elif is_greeting_or_smalltalk(question):
+        response = get_random_greeting()
+        response += "\n\nPlease choose a category:\n1. Study 📚\n2. Business 💼\n3. Gaming 🎮"
+        st.session_state.awaiting_category = True
+        st.write(response)
+
+    elif st.session_state.awaiting_category:
+        if question.strip() == "1":
+            st.write("📚 For studying, I recommend a lightweight laptop with good battery life and 8GB RAM.")
+            st.session_state.awaiting_category = False
+        elif question.strip() == "2":
+            st.write("💼 For business, go for a fast processor, 16GB RAM, and solid build quality.")
+            st.session_state.awaiting_category = False
+        elif question.strip() == "3":
+            st.write("🎮 For gaming, get a powerful GPU, i7 or Ryzen 7 CPU, and at least 16GB RAM.")
+            st.session_state.awaiting_category = False
+        else:
+            st.write("❌ Invalid option. Please enter 1 (Study), 2 (Business), or 3 (Gaming).")
+
+    else:
+        st.write("🤖 I didn’t quite get that. Try saying hello or asking about laptop types.")
 
     #save chat to pdf
     with st.sidebar:
