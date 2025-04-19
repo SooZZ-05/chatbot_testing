@@ -262,25 +262,10 @@ if hf_token and uploaded_file:
             if "recommendation" not in greeting.lower() and "suggestion" not in greeting.lower():
                 greeting += "\n\n" + category_suggestion
             ai_reply = greeting
-
+             # Farewell check
+        elif is_farewell(question):
+            ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
         else:
-            if st.session_state.get("awaiting_category", False):
-                if question.strip() == "1":
-                    ai_reply = "📚 For studying, I recommend a lightweight laptop with good battery life and 8GB RAM."
-                    st.session_state.awaiting_category = False
-                elif question.strip() == "2":
-                    ai_reply = "💼 For business, go for a fast processor, 16GB RAM, and solid build quality."
-                    st.session_state.awaiting_category = False
-                elif question.strip() == "3":
-                    ai_reply = "🎮 For gaming, get a powerful GPU, i7 or Ryzen 7 CPU, and at least 16GB RAM."
-                    st.session_state.awaiting_category = False
-                else:
-                    ai_reply = "❌ Invalid option. Please enter 1 (Study), 2 (Business), or 3 (Gaming)."
-             
-        # Farewell check
-        else: 
-            is_farewell(question):
-                ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
             with st.spinner("🤔 Thinking..."):
                 context = find_relevant_chunk(question, pdf_chunks)
                 ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
