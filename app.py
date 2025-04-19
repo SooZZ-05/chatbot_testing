@@ -274,31 +274,31 @@ if hf_token and uploaded_file:
     #     st.rerun()
 
     if question:
-    if is_farewell(question):
-        st.write("👋 Goodbye! Come back if you need laptop advice.")
-        st.session_state.awaiting_category = False
+        if is_farewell(question):
+            st.write("👋 Goodbye! Come back if you need laptop advice.")
+            st.session_state.awaiting_category = False
 
-    elif is_greeting_or_smalltalk(question):
-        response = get_random_greeting()
-        response += "\n\nPlease choose a category:\n1. Study 📚\n2. Business 💼\n3. Gaming 🎮"
-        st.session_state.awaiting_category = True
-        st.write(response)
+        elif is_greeting_or_smalltalk(question):
+            response = get_random_greeting()
+            response += "\n\nPlease choose a category:\n1. Study 📚\n2. Business 💼\n3. Gaming 🎮"
+            st.session_state.awaiting_category = True
+            st.write(response)
 
-    elif st.session_state.awaiting_category:
-        if question.strip() == "1":
-            st.write("📚 For studying, I recommend a lightweight laptop with good battery life and 8GB RAM.")
-            st.session_state.awaiting_category = False
-        elif question.strip() == "2":
-            st.write("💼 For business, go for a fast processor, 16GB RAM, and solid build quality.")
-            st.session_state.awaiting_category = False
-        elif question.strip() == "3":
-            st.write("🎮 For gaming, get a powerful GPU, i7 or Ryzen 7 CPU, and at least 16GB RAM.")
-            st.session_state.awaiting_category = False
+        elif st.session_state.awaiting_category:
+            if question.strip() == "1":
+                st.write("📚 For studying, I recommend a lightweight laptop with good battery life and 8GB RAM.")
+                st.session_state.awaiting_category = False
+            elif question.strip() == "2":
+                st.write("💼 For business, go for a fast processor, 16GB RAM, and solid build quality.")
+                st.session_state.awaiting_category = False
+            elif question.strip() == "3":
+                st.write("🎮 For gaming, get a powerful GPU, i7 or Ryzen 7 CPU, and at least 16GB RAM.")
+                st.session_state.awaiting_category = False
+            else:
+                st.write("❌ Invalid option. Please enter 1 (Study), 2 (Business), or 3 (Gaming).")
+
         else:
-            st.write("❌ Invalid option. Please enter 1 (Study), 2 (Business), or 3 (Gaming).")
-
-    else:
-        st.write("🤖 I didn’t quite get that. Try saying hello or asking about laptop types.")
+            st.write("🤖 I didn’t quite get that. Try saying hello or asking about laptop types.")
 
     #save chat to pdf
     with st.sidebar:
