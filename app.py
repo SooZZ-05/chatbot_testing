@@ -70,10 +70,6 @@ def is_farewell(user_input):
     close = get_close_matches(user_input, farewells, cutoff=0.6)
     return bool(close)
 
-
-
-
-
 # ===== PDF Handling =====
 def extract_text_from_pdf(uploaded_file):
     doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
