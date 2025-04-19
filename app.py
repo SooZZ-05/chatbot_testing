@@ -43,7 +43,7 @@ greeting_keywords = [
 ]
 
 farewells = [
-        "hye", "bye", "goodbye", "see ya", "see you", "later",
+        "bye", "goodbye", "see ya", "see you", "later",
         "i'm done", "thank you", "thanks, that's all", "talk to you later",
         "exit", "quit", "close", "end", "good night", "goodbye for now"
     ]
