@@ -278,7 +278,8 @@ if hf_token and uploaded_file:
                     ai_reply = "❌ Invalid option. Please enter 1 (Study), 2 (Business), or 3 (Gaming)."
              
         # Farewell check
-        else: is_farewell(question):
+        else: 
+            is_farewell(question):
                 ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!
             with st.spinner("🤔 Thinking..."):
                 context = find_relevant_chunk(question, pdf_chunks)
