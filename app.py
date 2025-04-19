@@ -262,6 +262,7 @@ if hf_token and uploaded_file:
             if "recommendation" not in greeting.lower() and "suggestion" not in greeting.lower():
                 greeting += "\n\n" + category_suggestion
             ai_reply = greeting
+            st.session_state.awaiting_category = True
              # Farewell check
         elif is_farewell(question):
             ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
@@ -278,9 +279,10 @@ if hf_token and uploaded_file:
                     st.session_state.awaiting_category = False
                 else:
                     ai_reply = "❌ Invalid option. Please enter 1 (Study), 2 (Business), or 3 (Gaming)."
-            with st.spinner("🤔 Thinking..."):
-                context = find_relevant_chunk(question, pdf_chunks)
-                ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
+            else:
+                with st.spinner("🤔 Thinking..."):
+                    context = find_relevant_chunk(question, pdf_chunks)
+                    ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
 
         st.session_state.history.append({"user": question, "assistant": ai_reply})
         st.rerun()
