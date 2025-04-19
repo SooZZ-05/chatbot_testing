@@ -228,7 +228,7 @@ def save_chat_to_pdf(chat_history):
 
     # Output PDF
     pdf_bytes = pdf.output(dest='S').encode('latin1')
-    return BytesIO(pdf_bytes)s
+    return BytesIO(pdf_bytes)
     
 # ===== Streamlit UI =====
 st.set_page_config(page_title="💻 Laptop Chatbot", page_icon="💬", layout="wide")
