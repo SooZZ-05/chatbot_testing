@@ -111,19 +111,18 @@ def extract_text_from_pdf(uploaded_file):
 #     return count_nlp_words(text)
 
 def count_words_from_pdf(uploaded_file):
-
-    # Extract text from PDF
-    reader = PdfReader(uploaded_file)
-    text = ""
-    for page in reader.pages:
-        text += page.extract_text() or ""
+   # Extract text from PDF
+   text = ""
+   with fitz.open(stream=uploaded_file.read(), filetype="pdf") as doc:
+       for page in doc:
+           text += page.get_text()
+   return text
 
     # Clean and split text to count words
     words = text.split()
     word_count = len(words)
-    char_count = len(text)
 
-    return word_count, char_count
+    return word_count
 
 def chunk_text(text, chunk_size=3000, overlap=500):
     chunks = []
