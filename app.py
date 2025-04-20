@@ -79,7 +79,7 @@ def is_farewell(user_input):
 
 # ===== PDF Handling =====
 def extract_text_from_pdf(uploaded_file):
-    doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+    #doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
     text = ""
     for page in doc:
         text += page.get_text()
@@ -257,7 +257,7 @@ if "history" not in st.session_state:
 
 if hf_token and uploaded_file:
     with st.spinner("🔍 Extracting and processing your document..."):
-        document_text = extract_text_from_pdf(uploaded_file)
+        #document_text = extract_text_from_pdf(uploaded_file)
         pdf_chunks = chunk_text(document_text)
 
     st.subheader("🧠 Chat with your PDF")
