@@ -159,28 +159,73 @@ def ask_llm_with_history(question, context, history, api_key):
         return f"❌ Error {response.status_code}: {response.text}"
 
 # ===== Emoji Formatting =====
+# def format_response(text):
+#     text = re.sub(r"(?<=[.!?])\s+(?=[A-Z])", "\n\n", text)
+#     text = re.sub(r"●", "\n\n●", text)
+#     used_emojis = set()
+#     replacements = {
+#         r"\bCPU\b": "🧠 CPU", r"\bprocessor\b": "🧠 Processor",
+#         r"\bRAM\b": "💾 RAM", r"\bSSD\b": "💽 SSD",
+#         r"\bstorage\b": "💽 Storage", r"\bdisplay\b": "🖥️ Display",
+#         r"\bscreen\b": "🖥️ Screen", r"\bbattery\b": "🔋 Battery",
+#         r"\bgraphics\b": "🎮 Graphics", r"\bprice\b": "💰 Price",
+#         r"\bweight\b": "⚖️ Weight",
+#     }
+#     for word, emoji in replacements.items():
+#         if emoji not in used_emojis:
+#             text = re.sub(word, emoji, text, count=1, flags=re.IGNORECASE)
+#             used_emojis.add(emoji)
+#     text = re.sub(r'\n{3,}', '\n\n', text)
+#     return text.strip()
+
+# def truncate_text(text, limit=1500):
+#     if len(text) <= limit:
+#         return text
+#     return text[:limit] + "..."
+
 def format_response(text):
+    # Add double newline after sentence-ending punctuation followed by a capital letter
     text = re.sub(r"(?<=[.!?])\s+(?=[A-Z])", "\n\n", text)
+    
+    # Format bullet points (e.g., "●" should be followed by a newline for better formatting)
     text = re.sub(r"●", "\n\n●", text)
+    
+    # Define a set to track used emojis (to avoid multiple replacements for the same keyword)
     used_emojis = set()
+    
+    # Mapping of words to emojis
     replacements = {
-        r"\bCPU\b": "🧠 CPU", r"\bprocessor\b": "🧠 Processor",
-        r"\bRAM\b": "💾 RAM", r"\bSSD\b": "💽 SSD",
-        r"\bstorage\b": "💽 Storage", r"\bdisplay\b": "🖥️ Display",
-        r"\bscreen\b": "🖥️ Screen", r"\bbattery\b": "🔋 Battery",
-        r"\bgraphics\b": "🎮 Graphics", r"\bprice\b": "💰 Price",
+        r"\bCPU\b": "🧠 CPU", 
+        r"\bprocessor\b": "🧠 Processor",
+        r"\bRAM\b": "💾 RAM", 
+        r"\bSSD\b": "💽 SSD",
+        r"\bstorage\b": "💽 Storage", 
+        r"\bdisplay\b": "🖥️ Display",
+        r"\bscreen\b": "🖥️ Screen", 
+        r"\bbattery\b": "🔋 Battery",
+        r"\bgraphics\b": "🎮 Graphics", 
+        r"\bprice\b": "💰 Price",
         r"\bweight\b": "⚖️ Weight",
     }
+    
+    # Perform replacements while ensuring no emoji is replaced more than once
     for word, emoji in replacements.items():
         if emoji not in used_emojis:
             text = re.sub(word, emoji, text, count=1, flags=re.IGNORECASE)
             used_emojis.add(emoji)
+    
+    # Remove excessive newlines (more than two consecutive newlines)
     text = re.sub(r'\n{3,}', '\n\n', text)
+    
+    # Return the formatted text with any leading/trailing whitespace stripped
     return text.strip()
 
 def truncate_text(text, limit=1500):
+    # If the text is within the limit, return it as is
     if len(text) <= limit:
         return text
+    
+    # Otherwise, truncate the text and append "..." to indicate more content
     return text[:limit] + "..."
 
 # ===== Chat Saving Button =====
