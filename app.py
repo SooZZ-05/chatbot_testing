@@ -15,8 +15,8 @@ from sklearn.metrics.pairwise import cosine_similarity
 from io import BytesIO
 from datetime import datetime
 from nltk.tokenize import word_tokenize
-from nltk.corpus import stopwords
-from nltk.stem import WordNetLemmatizer
+# from nltk.corpus import stopwords
+# from nltk.stem import WordNetLemmatizer
 
 # ===== Load API Key =====
 load_dotenv()
@@ -80,7 +80,7 @@ def is_farewell(user_input):
 
 # Ensure required resources are available
 def download_nltk_data():
-    for pkg in ["punkt_tab", "stopwords", "wordnet", "omw-1.4"]:
+    for pkg in ["punkt", "stopwords", "wordnet", "omw-1.4"]:
         try:
             nltk.data.find(pkg)
         except LookupError:
@@ -262,22 +262,12 @@ def save_chat_to_pdf(chat_history):
 st.set_page_config(page_title="💻 Laptop Chatbot", page_icon="💬", layout="wide")
 st.title("💻 Laptop Recommendation Chatbot")
 
-# uploaded_file = st.file_uploader("📄 Upload a Laptop Specification PDF", type=["pdf"])
+uploaded_file = st.file_uploader("📄 Upload a Laptop Specification PDF", type=["pdf"])
 
-st.title("NLP-Processed PDF Word Counter")
-uploaded_file = st.file_uploader("Upload your PDF file", type=["pdf"])
-
-if uploaded_file:
-    word_count = count_words_from_pdf(uploaded_file)
-    st.success(f"🧠 NLP-Processed Word Count: {word_count}")
-
-if "history" not in st.session_state:
-    st.session_state.history = []
-
-# if hf_token and uploaded_file:
-#     with st.spinner("🔍 Extracting and processing your document..."):
-#         document_text = extract_text_from_pdf(uploaded_file)
-#         pdf_chunks = chunk_text(document_text)
+if hf_token and uploaded_file:
+    with st.spinner("🔍 Extracting and processing your document..."):
+        document_text = extract_text_from_pdf(uploaded_file)
+        pdf_chunks = chunk_text(document_text)
 
     st.subheader("🧠 Chat with your PDF")
     for entry in st.session_state.history:
