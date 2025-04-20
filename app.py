@@ -258,29 +258,29 @@ def save_chat_to_pdf(chat_history):
     return BytesIO(pdf_bytes)
     
 # ===== Streamlit UI =====
-st.set_page_config(page_title="💻 Laptop Chatbot", page_icon="💬", layout="wide")
-st.title("💻 Laptop Recommendation Chatbot")
-
-uploaded_file = st.file_uploader("📄 Upload a Laptop Specification PDF", type=["pdf"])
-        
-if "history" not in st.session_state:
+ st.set_page_config(page_title="💻 Laptop Chatbot", page_icon="💬", layout="wide")
+ st.title("💻 Laptop Recommendation Chatbot")
+ 
+ uploaded_file = st.file_uploader("📄 Upload a Laptop Specification PDF", type=["pdf"])
+ 
+ if "history" not in st.session_state:
      st.session_state.history = []
-
-if hf_token and uploaded_file:
+ 
+ if hf_token and uploaded_file:
      with st.spinner("🔍 Extracting and processing your document..."):
          document_text = extract_text_from_pdf(uploaded_file)
          pdf_chunks = chunk_text(document_text)
  
-    st.subheader("🧠 Chat with your PDF")
-    for entry in st.session_state.history:
-        with st.chat_message("user"):
-            st.markdown(entry["user"])
-        with st.chat_message("assistant"):
-            short_reply = truncate_text(entry["assistant"])
-            st.write(short_reply)
-            if len(entry["assistant"]) > 1500:
-                with st.expander("🔎 View full response"):
-                    st.write(entry["assistant"])
+     st.subheader("🧠 Chat with your PDF")
+     for entry in st.session_state.history:
+         with st.chat_message("user"):
+             st.markdown(entry["user"])
+         with st.chat_message("assistant"):
+             short_reply = truncate_text(entry["assistant"])
+             st.write(short_reply)
+             if len(entry["assistant"]) > 1500:
+                 with st.expander("🔎 View full response"):
+                     st.write(entry["assistant"])
 
     question = st.chat_input("💬 Your message")
     if question:
