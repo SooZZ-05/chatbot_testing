@@ -14,6 +14,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from io import BytesIO
 from datetime import datetime
+from nltk.tokenize import word_tokenize
 
 # ===== Load API Key =====
 load_dotenv()
@@ -92,6 +93,23 @@ def find_relevant_chunk(question, chunks):
     similarities = cosine_similarity(question_vector, chunk_vectors).flatten()
     best_index = similarities.argmax()
     return chunks[best_index]
+    
+# Accurate text extraction and word count
+# ======= gan =========
+nltk.download('punkt')
+def extract_text_from_pdf(uploaded_file):
+    doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+    text = ""
+    for page in doc:
+        text += page.get_text()
+    return text
+
+def count_words_from_pdf(uploaded_file):
+    text = extract_text_from_pdf(uploaded_file)
+    tokens = word_tokenize(text)
+    words = [word for word in tokens if word.isalnum()]
+    return len(words)
+# =====================
 
 # ===== LLM Logic =====
 def ask_llm_with_history(question, context, history, api_key):
@@ -231,6 +249,12 @@ st.set_page_config(page_title="💻 Laptop Chatbot", page_icon="💬", layout="w
 st.title("💻 Laptop Recommendation Chatbot")
 
 uploaded_file = st.file_uploader("📄 Upload a Laptop Specification PDF", type=["pdf"])
+
+# ===== gan =====
+if uploaded_file:
+    word_count = count_words_from_pdf(uploaded_file)
+    st.success(f"📝 Total number of accurate words in the PDF: **{word_count}**")
+# ===============
 
 if "history" not in st.session_state:
     st.session_state.history = []
