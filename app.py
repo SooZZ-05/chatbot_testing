@@ -118,11 +118,11 @@ def count_words_from_pdf(uploaded_file):
            text += page.get_text()
    return text
 
-    # Clean and split text to count words
-    words = text.split()
-    word_count = len(words)
+   # Clean and split text to count words
+   words = text.split()
+   word_count = len(words)
 
-    return word_count
+   return word_count
 
 def chunk_text(text, chunk_size=3000, overlap=500):
     chunks = []
