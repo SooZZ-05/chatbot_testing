@@ -79,11 +79,11 @@ def extract_text_from_pdf(uploaded_file):
         text += page.get_text()
     return text
 
-def count_words_from_pdf(uploaded_file):
-    text = extract_text_from_pdf(uploaded_file)
-    tokens = word_tokenize(text)
-    words = [word for word in tokens if word.isalnum()]
-    return len(words)
+# def count_words_from_pdf(uploaded_file):
+#     text = extract_text_from_pdf(uploaded_file)
+#     tokens = word_tokenize(text)
+#     words = [word for word in tokens if word.isalnum()]
+#     return len(words)
 
 def chunk_text(text, chunk_size=3000, overlap=500):
     chunks = []
@@ -238,12 +238,6 @@ st.set_page_config(page_title="💻 Laptop Chatbot", page_icon="💬", layout="w
 st.title("💻 Laptop Recommendation Chatbot")
 
 uploaded_file = st.file_uploader("📄 Upload a Laptop Specification PDF", type=["pdf"])
-
-# ===== gan =====
-if uploaded_file:
-    word_count = count_words_from_pdf(uploaded_file)
-    st.success(f"📝 Total number of accurate words in the PDF: **{word_count}**")
-# ===============
 
 if "history" not in st.session_state:
     st.session_state.history = []
