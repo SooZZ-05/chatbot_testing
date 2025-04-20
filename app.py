@@ -15,6 +15,8 @@ from sklearn.metrics.pairwise import cosine_similarity
 from io import BytesIO
 from datetime import datetime
 from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
 
 # ===== Load API Key =====
 load_dotenv()
@@ -26,11 +28,10 @@ try:
 except LookupError:
     nltk.download('wordnet')
 
-# Ensure punkt is available
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt_tab')
+# Setup nltk data path
+nltk_data_path = os.path.join(os.getcwd(), "nltk_data")
+os.makedirs(nltk_data_path, exist_ok=True)
+nltk.data.path.append(nltk_data_path)
 
 # ===== Greeting Logic =====
 lemmatizer = WordNetLemmatizer()
@@ -77,19 +78,45 @@ def is_farewell(user_input):
     close = get_close_matches(user_input, farewells, cutoff=0.6)
     return bool(close)
 
-# ===== PDF Handling =====
+# Ensure required resources are available
+def download_nltk_data():
+    for pkg in ["punkt_tab", "stopwords", "wordnet", "omw-1.4"]:
+        try:
+            nltk.data.find(pkg)
+        except LookupError:
+            nltk.download(pkg, download_dir=nltk_data_path)
+
+download_nltk_data()
+
+# NLP Word Count Function
+def count_nlp_words(text):
+    tokens = word_tokenize(text)
+    tokens = [w.lower() for w in tokens if w.isalpha()]  # remove punctuation/numbers
+    tokens = [w for w in tokens if w not in stopwords.words("english")]  # remove stopwords
+    lemmatizer = WordNetLemmatizer()
+    tokens = [lemmatizer.lemmatize(w) for w in tokens]  # lemmatize
+    return len(tokens)
+
+# PDF Text Extractor
 def extract_text_from_pdf(uploaded_file):
-    doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
     text = ""
-    for page in doc:
-        text += page.get_text()
+    with fitz.open(stream=uploaded_file.read(), filetype="pdf") as doc:
+        for page in doc:
+            text += page.get_text()
     return text
 
-# Count words using nltk
+# Combine All
 def count_words_from_pdf(uploaded_file):
     text = extract_text_from_pdf(uploaded_file)
-    tokens = word_tokenize(text)
-    return len(tokens)
+    return count_nlp_words(text)
+
+# # ===== PDF Handling =====
+# def extract_text_from_pdf(uploaded_file):
+#     doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+#     text = ""
+#     for page in doc:
+#         text += page.get_text()
+#     return text
 
 def chunk_text(text, chunk_size=3000, overlap=500):
     chunks = []
@@ -245,12 +272,12 @@ st.title("💻 Laptop Recommendation Chatbot")
 
 # uploaded_file = st.file_uploader("📄 Upload a Laptop Specification PDF", type=["pdf"])
 
-# Streamlit file uploader
-uploaded_file = st.file_uploader("Upload PDF", type="pdf")
+st.title("NLP-Processed PDF Word Counter")
+uploaded_file = st.file_uploader("Upload your PDF file", type=["pdf"])
 
 if uploaded_file:
     word_count = count_words_from_pdf(uploaded_file)
-    st.write(f"📄 Total word count: {word_count}")
+    st.success(f"🧠 NLP-Processed Word Count: {word_count}")
 
 if "history" not in st.session_state:
     st.session_state.history = []
