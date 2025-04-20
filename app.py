@@ -270,7 +270,6 @@ if hf_token and uploaded_file:
         
 if "history" not in st.session_state:
      st.session_state.history = []
-    st.subheader("🧠 Chat with your PDF")
 
     for entry in st.session_state.history:
         with st.chat_message("user"):
