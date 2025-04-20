@@ -214,9 +214,9 @@ def format_response(text):
             text = re.sub(word, emoji, text, count=1, flags=re.IGNORECASE)
             used_emojis.add(emoji)
     
-    # Add RM symbol to prices (assuming the price is a numeric value)
-    text = re.sub(r"(\bprice\b.*?)(\d+)", r"\1RM \2", text)
-    
+    # Add RM symbol to prices (assuming the price is a numeric value followed by "RM")
+    text = re.sub(r"(\d{1,3}(?:,\d{3})*)(RM)", r"RM \1", text)  # Ensure 'RM' comes before the number
+
     # Remove excessive newlines (more than two consecutive newlines)
     text = re.sub(r'\n{3,}', '\n\n', text)
     
@@ -230,6 +230,7 @@ def truncate_text(text, limit=1500):
     
     # Otherwise, truncate the text and append "..." to indicate more content
     return text[:limit] + "..."
+
 
 # ===== Chat Saving Button =====
 def estimate_multicell_height(pdf, text, width, line_height):
