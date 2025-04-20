@@ -26,6 +26,13 @@ try:
 except LookupError:
     nltk.download('wordnet')
 
+# Download punkt once
+def download_punkt_once():
+    try:
+        nltk.data.find("tokenizers/punkt")
+    except LookupError:
+        nltk.download("punkt")
+
 # ===== Greeting Logic =====
 lemmatizer = WordNetLemmatizer()
 
@@ -79,7 +86,7 @@ def extract_text_from_pdf(uploaded_file):
         text += page.get_text()
     return text
     
-# tokenize words
+# tokenize how many words in file
 nltk.download('punkt')
 def count_words_from_pdf(uploaded_file):
     text = extract_text_from_pdf(uploaded_file)
