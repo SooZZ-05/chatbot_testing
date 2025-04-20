@@ -214,6 +214,9 @@ def format_response(text):
             text = re.sub(word, emoji, text, count=1, flags=re.IGNORECASE)
             used_emojis.add(emoji)
     
+    # Add RM symbol to prices (assuming the price is a numeric value)
+    text = re.sub(r"(\bprice\b.*?)(\d+)", r"\1RM \2", text)
+    
     # Remove excessive newlines (more than two consecutive newlines)
     text = re.sub(r'\n{3,}', '\n\n', text)
     
