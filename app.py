@@ -7,7 +7,6 @@ import re
 import requests
 import random
 import pytz
-nltk.download('punkt')
 from fpdf import FPDF
 from nltk.stem import WordNetLemmatizer
 from difflib import get_close_matches
@@ -79,7 +78,9 @@ def extract_text_from_pdf(uploaded_file):
     for page in doc:
         text += page.get_text()
     return text
-
+    
+# tokenize words
+nltk.download('punkt')
 def count_words_from_pdf(uploaded_file):
     text = extract_text_from_pdf(uploaded_file)
     tokens = word_tokenize(text)
@@ -238,7 +239,12 @@ def save_chat_to_pdf(chat_history):
 st.set_page_config(page_title="💻 Laptop Chatbot", page_icon="💬", layout="wide")
 st.title("💻 Laptop Recommendation Chatbot")
 
-uploaded_file = st.file_uploader("📄 Upload a Laptop Specification PDF", type=["pdf"])
+# uploaded_file = st.file_uploader("📄 Upload a Laptop Specification PDF", type=["pdf"])
+
+uploaded_file = st.file_uploader("📄 Upload a PDF", type=["pdf"], accept_multiple_files=False)
+if uploaded_file:
+    word_count = count_words_from_pdf(uploaded_file)
+    st.success(f"📝 Total number of accurate words in the PDF: **{word_count}**")
 
 if "history" not in st.session_state:
     st.session_state.history = []
