@@ -7,6 +7,7 @@ import re
 import requests
 import random
 import pytz
+nltk.download('punkt')
 from fpdf import FPDF
 from nltk.stem import WordNetLemmatizer
 from difflib import get_close_matches
@@ -96,7 +97,6 @@ def find_relevant_chunk(question, chunks):
     
 # Accurate text extraction and word count
 # ======= gan =========
-nltk.download('punkt')
 def extract_text_from_pdf(uploaded_file):
     doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
     text = ""
