@@ -26,13 +26,6 @@ try:
 except LookupError:
     nltk.download('wordnet')
 
-# Download punkt once
-def download_punkt_once():
-    try:
-        nltk.data.find("tokenizers/punkt")
-    except LookupError:
-        nltk.download("punkt")
-
 # ===== Greeting Logic =====
 lemmatizer = WordNetLemmatizer()
 
@@ -85,14 +78,12 @@ def extract_text_from_pdf(uploaded_file):
     for page in doc:
         text += page.get_text()
     return text
-    
-# tokenize how many words in file
-nltk.download('punkt')
+
+# Count words using nltk
 def count_words_from_pdf(uploaded_file):
     text = extract_text_from_pdf(uploaded_file)
     tokens = word_tokenize(text)
-    words = [word for word in tokens if word.isalnum()]
-    return len(words)
+    return len(tokens)
 
 def chunk_text(text, chunk_size=3000, overlap=500):
     chunks = []
@@ -248,10 +239,14 @@ st.title("💻 Laptop Recommendation Chatbot")
 
 # uploaded_file = st.file_uploader("📄 Upload a Laptop Specification PDF", type=["pdf"])
 
-uploaded_file = st.file_uploader("📄 Upload a PDF", type=["pdf"], accept_multiple_files=False)
+# Streamlit file uploader
+uploaded_file = st.file_uploader("Upload PDF", type="pdf")
+
 if uploaded_file:
     word_count = count_words_from_pdf(uploaded_file)
-    st.success(f"📝 Total number of accurate words in the PDF: **{word_count}**")
+    st.write(f"📄 Total word count: {word_count}")
+
+# =====================================================
 
 if "history" not in st.session_state:
     st.session_state.history = []
