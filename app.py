@@ -214,8 +214,8 @@ def format_response(text):
             text = re.sub(word, emoji, text, count=1, flags=re.IGNORECASE)
             used_emojis.add(emoji)
     
-    # Correct the product list format (ensure number and name are together)
-    text = re.sub(r"(\d+)\.\s*(\w[\w\s]*[\w])", r"\1. \2", text)  # Ensures number is followed directly by name
+    # Ensure that product numbers and names stay on the same line (no break)
+    text = re.sub(r"(\d+)\.\s*(\S.*?)(?=\s*\d+\.|\n|$)", r"\1. \2", text)  # Ensures number and name together
     
     # Add RM symbol to prices (assuming the price is a numeric value followed by "RM")
     text = re.sub(r"(\d{1,3}(?:,\d{3})*)(RM)", r"RM \1", text)  # Ensure 'RM' comes before the number
@@ -233,6 +233,7 @@ def truncate_text(text, limit=1500):
     
     # Otherwise, truncate the text and append "..." to indicate more content
     return text[:limit] + "..."
+
 
 
 
