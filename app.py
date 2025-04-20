@@ -279,10 +279,8 @@ st.title("💻 Laptop Recommendation Chatbot")
 uploaded_file = st.file_uploader("📄 Upload a Laptop Specification PDF", type=["pdf"])
 
 if uploaded_file:
-    word_count, char_count = count_words_from_pdf(uploaded_file)
+    word_count = count_words_from_pdf(uploaded_file)
     st.write(f"📝 Total Words (raw): {word_count}")
-    st.write(f"🔡 Total Characters: {char_count}")
-
 
 if "history" not in st.session_state:
     st.session_state.history = []
