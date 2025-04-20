@@ -7,7 +7,6 @@ import re
 import requests
 import random
 import pytz
-nltk.download('punkt')
 from fpdf import FPDF
 from nltk.stem import WordNetLemmatizer
 from difflib import get_close_matches
@@ -80,6 +79,12 @@ def extract_text_from_pdf(uploaded_file):
         text += page.get_text()
     return text
 
+def count_words_from_pdf(uploaded_file):
+    text = extract_text_from_pdf(uploaded_file)
+    tokens = word_tokenize(text)
+    words = [word for word in tokens if word.isalnum()]
+    return len(words)
+
 def chunk_text(text, chunk_size=3000, overlap=500):
     chunks = []
     for i in range(0, len(text), chunk_size - overlap):
@@ -94,22 +99,6 @@ def find_relevant_chunk(question, chunks):
     similarities = cosine_similarity(question_vector, chunk_vectors).flatten()
     best_index = similarities.argmax()
     return chunks[best_index]
-    
-# Accurate text extraction and word count
-# ======= gan =========
-def extract_text_from_pdf(uploaded_file):
-    doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
-    text = ""
-    for page in doc:
-        text += page.get_text()
-    return text
-
-def count_words_from_pdf(uploaded_file):
-    text = extract_text_from_pdf(uploaded_file)
-    tokens = word_tokenize(text)
-    words = [word for word in tokens if word.isalnum()]
-    return len(words)
-# =====================
 
 # ===== LLM Logic =====
 def ask_llm_with_history(question, context, history, api_key):
