@@ -26,6 +26,12 @@ try:
 except LookupError:
     nltk.download('wordnet')
 
+# Ensure punkt is available
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt_tab')
+
 # ===== Greeting Logic =====
 lemmatizer = WordNetLemmatizer()
 
@@ -70,15 +76,6 @@ def is_farewell(user_input):
     user_input = user_input.lower().strip()
     close = get_close_matches(user_input, farewells, cutoff=0.6)
     return bool(close)
-
-# Ensure punkt is available
-def ensure_punkt():
-    try:
-        nltk.data.find('tokenizers/punkt')
-    except LookupError:
-        nltk.download('punkt_tab')
-
-ensure_punkt()
 
 # ===== PDF Handling =====
 def extract_text_from_pdf(uploaded_file):
