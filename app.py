@@ -262,15 +262,16 @@ st.set_page_config(page_title="💻 Laptop Chatbot", page_icon="💬", layout="w
 st.title("💻 Laptop Recommendation Chatbot")
 
 uploaded_file = st.file_uploader("📄 Upload a Laptop Specification PDF", type=["pdf"])
-
-if hf_token and uploaded_file:
-    with st.spinner("🔍 Extracting and processing your document..."):
-        document_text = extract_text_from_pdf(uploaded_file)
-        pdf_chunks = chunk_text(document_text)
         
 if "history" not in st.session_state:
      st.session_state.history = []
 
+if hf_token and uploaded_file:
+     with st.spinner("🔍 Extracting and processing your document..."):
+         document_text = extract_text_from_pdf(uploaded_file)
+         pdf_chunks = chunk_text(document_text)
+ 
+    st.subheader("🧠 Chat with your PDF")
     for entry in st.session_state.history:
         with st.chat_message("user"):
             st.markdown(entry["user"])
