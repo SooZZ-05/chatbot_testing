@@ -7,6 +7,7 @@ import re
 import requests
 import random
 import pytz
+nltk.download('punkt')
 from fpdf import FPDF
 from nltk.stem import WordNetLemmatizer
 from difflib import get_close_matches
@@ -79,11 +80,11 @@ def extract_text_from_pdf(uploaded_file):
         text += page.get_text()
     return text
 
-# def count_words_from_pdf(uploaded_file):
-#     text = extract_text_from_pdf(uploaded_file)
-#     tokens = word_tokenize(text)
-#     words = [word for word in tokens if word.isalnum()]
-#     return len(words)
+def count_words_from_pdf(uploaded_file):
+    text = extract_text_from_pdf(uploaded_file)
+    tokens = word_tokenize(text)
+    words = [word for word in tokens if word.isalnum()]
+    return len(words)
 
 def chunk_text(text, chunk_size=3000, overlap=500):
     chunks = []
