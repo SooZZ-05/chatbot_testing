@@ -15,8 +15,9 @@ from sklearn.metrics.pairwise import cosine_similarity
 from io import BytesIO
 from datetime import datetime
 from nltk.tokenize import word_tokenize
-from nltk.corpus import stopwords
-from nltk.stem import WordNetLemmatizer
+# from nltk.corpus import stopwords
+# from nltk.stem import WordNetLemmatizer
+from PyPDF2 import PdfReader
 
 # ===== Load API Key =====
 load_dotenv()
@@ -78,24 +79,24 @@ def is_farewell(user_input):
     close = get_close_matches(user_input, farewells, cutoff=0.6)
     return bool(close)
 
-# Ensure required resources are available
-def download_nltk_data():
-    for pkg in ["punkt", "stopwords", "wordnet", "omw-1.4"]:
-        try:
-            nltk.data.find(pkg)
-        except LookupError:
-            nltk.download(pkg, download_dir=nltk_data_path)
+# # Ensure required resources are available
+# def download_nltk_data():
+#     for pkg in ["punkt", "stopwords", "wordnet", "omw-1.4"]:
+#         try:
+#             nltk.data.find(pkg)
+#         except LookupError:
+#             nltk.download(pkg, download_dir=nltk_data_path)
 
-download_nltk_data()
+# download_nltk_data()
 
-# NLP Word Count Function
-def count_nlp_words(text):
-    tokens = word_tokenize(text)
-    tokens = [w.lower() for w in tokens if w.isalpha()]  # remove punctuation/numbers
-    tokens = [w for w in tokens if w not in stopwords.words("english")]  # remove stopwords
-    lemmatizer = WordNetLemmatizer()
-    tokens = [lemmatizer.lemmatize(w) for w in tokens]  # lemmatize
-    return len(tokens)
+# # NLP Word Count Function
+# def count_nlp_words(text):
+#     tokens = word_tokenize(text)
+#     tokens = [w.lower() for w in tokens if w.isalpha()]  # remove punctuation/numbers
+#     tokens = [w for w in tokens if w not in stopwords.words("english")]  # remove stopwords
+#     lemmatizer = WordNetLemmatizer()
+#     tokens = [lemmatizer.lemmatize(w) for w in tokens]  # lemmatize
+#     return len(tokens)
 
 # PDF Text Extractor
 def extract_text_from_pdf(uploaded_file):
@@ -110,7 +111,6 @@ def extract_text_from_pdf(uploaded_file):
 #     return count_nlp_words(text)
 
 def count_words_from_pdf(uploaded_file):
-    from PyPDF2 import PdfReader
 
     # Extract text from PDF
     reader = PdfReader(uploaded_file)
