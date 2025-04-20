@@ -17,7 +17,7 @@ from datetime import datetime
 from nltk.tokenize import word_tokenize
 # from nltk.corpus import stopwords
 # from nltk.stem import WordNetLemmatizer
-from PyPDF2 import PdfReader
+
 
 # ===== Load API Key =====
 load_dotenv()
