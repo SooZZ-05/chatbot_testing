@@ -274,10 +274,10 @@ if uploaded_file:
 if "history" not in st.session_state:
     st.session_state.history = []
 
-if hf_token and uploaded_file:
-    with st.spinner("🔍 Extracting and processing your document..."):
-        document_text = extract_text_from_pdf(uploaded_file)
-        pdf_chunks = chunk_text(document_text)
+# if hf_token and uploaded_file:
+#     with st.spinner("🔍 Extracting and processing your document..."):
+#         document_text = extract_text_from_pdf(uploaded_file)
+#         pdf_chunks = chunk_text(document_text)
 
     st.subheader("🧠 Chat with your PDF")
     for entry in st.session_state.history:
