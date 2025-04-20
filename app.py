@@ -79,7 +79,7 @@ def is_farewell(user_input):
 
 # ===== PDF Handling =====
 def extract_text_from_pdf(uploaded_file):
-    #doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+    doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
     text = ""
     for page in doc:
         text += page.get_text()
@@ -87,7 +87,7 @@ def extract_text_from_pdf(uploaded_file):
 
 # Count words using nltk
 def count_words_from_pdf(uploaded_file):
-    text = extract_text_from_pdf(uploaded_file)
+    text = ""
     tokens = word_tokenize(text)
     return len(tokens)
 
