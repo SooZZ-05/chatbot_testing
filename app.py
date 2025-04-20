@@ -87,7 +87,7 @@ def extract_text_from_pdf(uploaded_file):
 
 # Count words using nltk
 def count_words_from_pdf(uploaded_file):
-    text = ""
+    text = extract_text_from_pdf(uploaded_file)
     tokens = word_tokenize(text)
     return len(tokens)
 
