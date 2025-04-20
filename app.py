@@ -76,7 +76,7 @@ def ensure_punkt():
     try:
         nltk.data.find('tokenizers/punkt')
     except LookupError:
-        nltk.download('punkt')
+        nltk.download('punkt_tab')
 
 ensure_punkt()
 
