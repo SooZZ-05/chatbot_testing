@@ -106,9 +106,9 @@ def extract_text_from_pdf(uploaded_file):
             text += page.get_text()
     return text
 
-def count_words_from_pdf(uploaded_file):
-    text = extract_text_from_pdf(uploaded_file)
-    return count_nlp_words(text)
+# def count_words_from_pdf(uploaded_file):
+#     text = extract_text_from_pdf(uploaded_file)
+#     return count_nlp_words(text)
 
 def chunk_text(text, chunk_size=3000, overlap=500):
     chunks = []
