@@ -316,15 +316,26 @@ def save_chat_to_pdf(chat_history):
 st.set_page_config(page_title="💻 Laptop Chatbot", page_icon="💬", layout="wide")
 st.title("💻 Laptop Recommendation Chatbot")
  
-uploaded_file = st.file_uploader("📄 Upload a Laptop Specification PDF", type=["pdf"])
+# uploaded_file = st.file_uploader("📄 Upload a Laptop Specification PDF", type=["pdf"])
+uploaded_files = st.file_uploader("📄 Upload Laptop Specification PDFs", type=["pdf"], accept_multiple_files=True)
+
 
 if "history" not in st.session_state:
     st.session_state.history = []
  
-if hf_token and uploaded_file:
-    with st.spinner("🔍 Extracting and processing your document..."):
-        document_text = extract_text_from_pdf(uploaded_file)
-        pdf_chunks = chunk_text(document_text)
+# if hf_token and uploaded_file:
+#     with st.spinner("🔍 Extracting and processing your document..."):
+#         document_text = extract_text_from_pdf(uploaded_file)
+#         pdf_chunks = chunk_text(document_text)
+
+if uploaded_files:
+    with st.spinner("🔍 Extracting and processing your documents..."):
+        all_text = ""
+        for uploaded_file in uploaded_files:
+            document_text = extract_text_from_pdf(uploaded_file)
+            all_text += document_text + "\n\n"  # Combine the text from all PDFs
+        pdf_chunks = chunk_text(all_text)
+
  
     st.subheader("🧠 Chat with your PDF")
     for entry in st.session_state.history:
