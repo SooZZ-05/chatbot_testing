@@ -376,22 +376,22 @@ if hf_token and uploaded_files:
     #     st.rerun()
 
     if question:
-    if is_greeting_or_smalltalk(question):
-        ai_reply = get_random_greeting()
-        if "recommendation" not in ai_reply.lower() and "suggestion" not in ai_reply.lower():
-            ai_reply += "\n\n" + category_suggestion
-    elif is_farewell(question):
-        ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
-    else:
-        if not is_relevant_question(question, pdf_chunks):
-            ai_reply = "❓ Sorry, I can only help with questions related to the laptop specifications you uploaded."
+        if is_greeting_or_smalltalk(question):
+            ai_reply = get_random_greeting()
+            if "recommendation" not in ai_reply.lower() and "suggestion" not in ai_reply.lower():
+                ai_reply += "\n\n" + category_suggestion
+        elif is_farewell(question):
+            ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
         else:
-            with st.spinner("🤔 Thinking..."):
-                context = find_relevant_chunk(question, pdf_chunks)
-                ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
+            if not is_relevant_question(question, pdf_chunks):
+                ai_reply = "❓ Sorry, I can only help with questions related to the laptop specifications you uploaded."
+            else:
+                with st.spinner("🤔 Thinking..."):
+                    context = find_relevant_chunk(question, pdf_chunks)
+                    ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
 
-    st.session_state.history.append({"user": question, "assistant": ai_reply})
-    st.rerun()
+        st.session_state.history.append({"user": question, "assistant": ai_reply})
+        st.rerun()
 
 
     #save chat to pdf
