@@ -328,7 +328,7 @@ if "history" not in st.session_state:
 #         document_text = extract_text_from_pdf(uploaded_file)
 #         pdf_chunks = chunk_text(document_text)
 
-if uploaded_files:
+if hf_token and uploaded_files:
     with st.spinner("🔍 Extracting and processing your documents..."):
         all_text = ""
         for uploaded_file in uploaded_files:
@@ -383,5 +383,5 @@ if uploaded_files:
 
 elif not hf_token:
     st.error("🔐 API key not found.")
-elif not uploaded_file:
+elif not uploaded_files:
     st.info("Please upload a PDF with laptop specifications.")
