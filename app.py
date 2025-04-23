@@ -17,6 +17,7 @@ from datetime import datetime
 from nltk.tokenize import word_tokenize
 import numpy as np
 from nltk.corpus import stopwords
+import pdfplumber
 # from nltk.stem import WordNetLemmatizer
 nltk.download('stopwords')
 
