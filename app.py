@@ -113,11 +113,9 @@ stop_words = set(stopwords.words('english'))
 
 def extract_text_from_pdf(uploaded_file):
     text = ""
-
-    # Extract text from PDF
-    with pdfplumber.open(uploaded_file) as pdf:
-        for page in pdf.pages:
-            text += page.extract_text() or ""
+    with fitz.open(stream=uploaded_file.read(), filetype="pdf") as doc:
+        for page in doc:
+            text += page.get_text()
 
     # Remove punctuation
     text = text.translate(str.maketrans('', '', string.punctuation))
