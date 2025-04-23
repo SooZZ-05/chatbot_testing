@@ -136,7 +136,7 @@ def chunk_text(text, chunk_size=3000, overlap=500):
         chunks.append(text[i:i+chunk_size])
     return chunks
 
-def extract_keywords_tfidf(text, top_n=30):
+def extract_keywords_tfidf(text, top_n=100):
     vectorizer = TfidfVectorizer(stop_words='english', max_features=1000)
     tfidf_matrix = vectorizer.fit_transform([text])
     scores = tfidf_matrix.toarray().flatten()
