@@ -107,26 +107,24 @@ def is_farewell(user_input):
 #             text += page.get_text()
 #     return text
 
+stop_words = set(stopwords.words('english'))
+
 def extract_text_from_pdf(uploaded_file):
     text = ""
-    with fitz.open(stream=uploaded_file.read(), filetype="pdf") as doc:
-        for page in doc:
-            text += page.get_text()
 
-    # Tokenize the text
-    tokens = word_tokenize(text)
+    # Extract text from PDF
+    with pdfplumber.open(uploaded_file) as pdf:
+        for page in pdf.pages:
+            text += page.extract_text() or ""
 
-    # Remove punctuation and convert to lower case
-    tokens = [word.lower() for word in tokens if word.isalpha()]
+    # Remove punctuation
+    text = text.translate(str.maketrans('', '', string.punctuation))
 
     # Remove stopwords
-    stop_words = set(stopwords.words('english'))
-    filtered_tokens = [word for word in tokens if word not in stop_words]
+    words = text.split()
+    filtered_words = [word for word in words if word.lower() not in stop_words]
 
-    # Join the tokens back into a cleaned string
-    cleaned_text = " ".join(filtered_tokens)
-    return cleaned_text
-
+    return ' '.join(filtered_words)
 
 # def count_words_from_pdf(uploaded_file):
 #     text = extract_text_from_pdf(uploaded_file)
