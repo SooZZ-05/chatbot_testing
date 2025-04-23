@@ -7,6 +7,7 @@ import re
 import requests
 import random
 import pytz
+import string
 from fpdf import FPDF
 from nltk.stem import WordNetLemmatizer
 from difflib import get_close_matches
