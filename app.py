@@ -16,7 +16,7 @@ from io import BytesIO
 from datetime import datetime
 from nltk.tokenize import word_tokenize
 import numpy as np
-# from nltk.corpus import stopwords
+from nltk.corpus import stopwords
 # from nltk.stem import WordNetLemmatizer
 
 
@@ -100,12 +100,33 @@ def is_farewell(user_input):
 #     return len(tokens)
 
 # PDF Text Extractor
+# def extract_text_from_pdf(uploaded_file):
+#     text = ""
+#     with fitz.open(stream=uploaded_file.read(), filetype="pdf") as doc:
+#         for page in doc:
+#             text += page.get_text()
+#     return text
+
 def extract_text_from_pdf(uploaded_file):
     text = ""
     with fitz.open(stream=uploaded_file.read(), filetype="pdf") as doc:
         for page in doc:
             text += page.get_text()
-    return text
+
+    # Tokenize the text
+    tokens = word_tokenize(text)
+
+    # Remove punctuation and convert to lower case
+    tokens = [word.lower() for word in tokens if word.isalpha()]
+
+    # Remove stopwords
+    stop_words = set(stopwords.words('english'))
+    filtered_tokens = [word for word in tokens if word not in stop_words]
+
+    # Join the tokens back into a cleaned string
+    cleaned_text = " ".join(filtered_tokens)
+    return cleaned_text
+
 
 # def count_words_from_pdf(uploaded_file):
 #     text = extract_text_from_pdf(uploaded_file)
@@ -173,8 +194,10 @@ def ask_llm_with_history(question, context, history, api_key):
 def is_relevant_question(question, pdf_chunks,keywords):
     # Here we check for the presence of any relevant keywords from the uploaded PDFs
     question = question.lower()
-    #relevant_keywords = ["study", "business", "gaming", "laptop", "processor", "ram", "ssd", "battery", "weight", "price", "graphics", "display", "screen"]
+    additional_keywords = ["study", "business", "gaming", "laptop", "processor", "ram", "ssd", "battery", "weight", "price", "graphics", "display", "screen"]
     relevant_keywords = keywords
+    for words in additional_keywords:
+        relevant_keywords.append(words)
     if any(keyword in question for keyword in relevant_keywords):
         return True
     return False
