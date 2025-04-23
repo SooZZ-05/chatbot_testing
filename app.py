@@ -18,7 +18,7 @@ from nltk.tokenize import word_tokenize
 import numpy as np
 from nltk.corpus import stopwords
 # from nltk.stem import WordNetLemmatizer
-
+nltk.download('stopwords')
 
 # ===== Load API Key =====
 load_dotenv()
