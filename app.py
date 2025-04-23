@@ -173,8 +173,8 @@ def ask_llm_with_history(question, context, history, api_key):
 def is_relevant_question(question, pdf_chunks,keywords):
     # Here we check for the presence of any relevant keywords from the uploaded PDFs
     question = question.lower()
-    relevant_keywords = ["study", "business", "gaming", "laptop", "processor", "ram", "ssd", "battery", "weight", "price", "graphics", "display", "screen"]
-    relevant_keywords.append(keywords)
+    #relevant_keywords = ["study", "business", "gaming", "laptop", "processor", "ram", "ssd", "battery", "weight", "price", "graphics", "display", "screen"]
+    relevant_keywords = keywords
     if any(keyword in question for keyword in relevant_keywords):
         return True
     return False
