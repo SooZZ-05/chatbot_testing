@@ -15,6 +15,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from io import BytesIO
 from datetime import datetime
 from nltk.tokenize import word_tokenize
+import numpy as np
 # from nltk.corpus import stopwords
 # from nltk.stem import WordNetLemmatizer
 
