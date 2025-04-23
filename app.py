@@ -116,6 +116,17 @@ def chunk_text(text, chunk_size=3000, overlap=500):
         chunks.append(text[i:i+chunk_size])
     return chunks
 
+def extract_keywords_tfidf(text, top_n=30):
+    vectorizer = TfidfVectorizer(stop_words='english', max_features=1000)
+    tfidf_matrix = vectorizer.fit_transform([text])
+    scores = tfidf_matrix.toarray().flatten()
+    keywords = np.array(vectorizer.get_feature_names_out())
+    
+    top_indices = scores.argsort()[-top_n:][::-1]
+    top_keywords = keywords[top_indices]
+    
+    return top_keywords.tolist()
+
 def find_relevant_chunk(question, chunks):
     documents = chunks + [question]
     vectorizer = TfidfVectorizer().fit(documents)
@@ -158,10 +169,11 @@ def ask_llm_with_history(question, context, history, api_key):
     else:
         return f"❌ Error {response.status_code}: {response.text}"
 
-def is_relevant_question(question, pdf_chunks):
+def is_relevant_question(question, pdf_chunks,keywords):
     # Here we check for the presence of any relevant keywords from the uploaded PDFs
     question = question.lower()
-    relevant_keywords = ["student", "business", "gaming", "laptop", "processor", "ram", "ssd", "battery", "weight", "price", "graphics", "display", "screen"]
+    relevant_keywords = ["study", "business", "gaming", "laptop", "processor", "ram", "ssd", "battery", "weight", "price", "graphics", "display", "screen"]
+    relevant_keywords.append(keywords)
     if any(keyword in question for keyword in relevant_keywords):
         return True
     return False
@@ -344,6 +356,7 @@ if hf_token and uploaded_files:
             document_text = extract_text_from_pdf(uploaded_file)
             all_text += document_text + "\n\n"  # Combine the text from all PDFs
         pdf_chunks = chunk_text(all_text)
+        keywords = extract_keywords_tfidf(all_text, top_n=30)
 
  
     st.subheader("🧠 Chat with your PDF")
@@ -383,7 +396,7 @@ if hf_token and uploaded_files:
         elif is_farewell(question):
             ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
         else:
-            if not is_relevant_question(question, pdf_chunks):
+            if not is_relevant_question(question, pdf_chunks, keywords):
                 ai_reply = "❓ Sorry, I can only help with questions related to the laptop specifications you uploaded."
             else:
                 with st.spinner("🤔 Thinking..."):
