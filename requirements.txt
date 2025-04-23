@@ -8,3 +8,4 @@ fpdf
 pytz
 fitz
 PyMuPDF
+pdfplumber
