@@ -427,7 +427,8 @@ if hf_token and uploaded_files:
         # Final catch-all
         else:
             ai_reply = "🤔 I’m not sure how to help with that. Could you try rephrasing or asking about something in the laptop PDFs?"
-
+    if 'ai_reply' not in locals():
+        ai_reply = "🤔 Sorry, I didn’t quite catch that. Could you rephrase or be more specific?"
     st.session_state.history.append({"user": question, "assistant": ai_reply})
     st.rerun()
 
