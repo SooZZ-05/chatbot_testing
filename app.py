@@ -355,7 +355,6 @@ if hf_token and uploaded_files:
         st.session_state.history.append({"user": question, "assistant": ai_reply})
         st.rerun()
 
-
     #save chat to pdf
     with st.sidebar:
         st.markdown("### 💬 Options")
