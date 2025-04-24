@@ -201,7 +201,7 @@ def format_response(text):
     # Perform replacements while ensuring no emoji is replaced more than once
     for word, emoji in replacements.items():
         if emoji not in used_emojis:
-            text = re.sub(word, emoji, text, count=1, flags=re.IGNORECASE)
+            text = re.sub(word, emoji, text, flags=re.IGNORECASE)
             used_emojis.add(emoji)
     
     # Ensure that product numbers and names stay on the same line (no break)
@@ -330,8 +330,8 @@ if hf_token and uploaded_files:
         with st.chat_message("assistant"):
             short_reply = truncate_text(entry["assistant"])
             st.write(short_reply)
-            if len(entry["assistant"]) > 1500:
-                with st.expander("🔎 View full response"):
+            if len(entry["assistant"]) > 1500 or not entry["assistant"].strip().endswith(('.', '!', '?')):
+                with st.expander("🔁Click to view or regenerate full reply"):
                     st.write(entry["assistant"])
 
     question = st.chat_input("💬 Your message")
@@ -358,8 +358,15 @@ if hf_token and uploaded_files:
     #save chat to pdf
     with st.sidebar:
         st.markdown("### 💬 Options")
-        max_tokens = st.slider("🧠 Max Tokens for Response", min_value=200, max_value=1500, value=700, step=100)
-        st.session_state["max_tokens"] = max_tokens
+        preset = st.radio("🧠 Response Length", ["Short", Balanced", "Detailed"], index=1)
+        if preset == "Short":
+            max_tokens = 300
+        elif preset == "Balanced":
+            max_tokens = 700
+        else:  # Detailed
+            max_tokens = 1200
+
+    st.session_state["max_tokens"] = max_tokens
         if st.session_state.history:
             pdf_file = save_chat_to_pdf(st.session_state.history)
             st.download_button(
