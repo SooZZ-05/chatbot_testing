@@ -10,3 +10,4 @@ fitz
 PyMuPDF
 pdfplumber
 transformers
+torch
