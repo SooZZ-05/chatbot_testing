@@ -19,6 +19,7 @@ from nltk.tokenize import word_tokenize
 import numpy as np
 from nltk.corpus import stopwords
 import pdfplumber
+from transformers import pipeline
 # from nltk.stem import WordNetLemmatizer
 nltk.download('stopwords')
 
@@ -82,33 +83,6 @@ def is_farewell(user_input):
     close = get_close_matches(user_input, farewells, cutoff=0.6)
     return bool(close)
 
-# # Ensure required resources are available
-# def download_nltk_data():
-#     for pkg in ["punkt", "stopwords", "wordnet", "omw-1.4"]:
-#         try:
-#             nltk.data.find(pkg)
-#         except LookupError:
-#             nltk.download(pkg, download_dir=nltk_data_path)
-
-# download_nltk_data()
-
-# # NLP Word Count Function
-# def count_nlp_words(text):
-#     tokens = word_tokenize(text)
-#     tokens = [w.lower() for w in tokens if w.isalpha()]  # remove punctuation/numbers
-#     tokens = [w for w in tokens if w not in stopwords.words("english")]  # remove stopwords
-#     lemmatizer = WordNetLemmatizer()
-#     tokens = [lemmatizer.lemmatize(w) for w in tokens]  # lemmatize
-#     return len(tokens)
-
-# PDF Text Extractor
-# def extract_text_from_pdf(uploaded_file):
-#     text = ""
-#     with fitz.open(stream=uploaded_file.read(), filetype="pdf") as doc:
-#         for page in doc:
-#             text += page.get_text()
-#     return text
-
 stop_words = set(stopwords.words('english'))
 
 def extract_text_from_pdf(uploaded_file):
@@ -125,11 +99,7 @@ def extract_text_from_pdf(uploaded_file):
     filtered_words = [word for word in words if word.lower() not in stop_words]
 
     return ' '.join(filtered_words)
-
-# def count_words_from_pdf(uploaded_file):
-#     text = extract_text_from_pdf(uploaded_file)
-#     return count_nlp_words(text)
-
+    
 def chunk_text(text, chunk_size=3000, overlap=500):
     chunks = []
     for i in range(0, len(text), chunk_size - overlap):
@@ -155,6 +125,16 @@ def find_relevant_chunk(question, chunks):
     similarities = cosine_similarity(question_vector, chunk_vectors).flatten()
     best_index = similarities.argmax()
     return chunks[best_index]
+
+summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
+
+def summarize_text_transformers(text):
+    chunks = [text[i:i+1000] for i in range(0, len(text), 1000)]
+    summary = ""
+    for chunk in chunks:
+        summary += summarizer(chunk, max_length=130, min_length=30, do_sample=False)[0]['summary_text']
+    return summary
+
 
 # ===== LLM Logic =====
 def ask_llm_with_history(question, context, history, api_key):
@@ -201,32 +181,6 @@ def is_relevant_question(question, pdf_chunks,keywords):
     if any(keyword in question for keyword in relevant_keywords):
         return True
     return False
-
-
-# ===== Emoji Formatting =====
-# def format_response(text):
-#     text = re.sub(r"(?<=[.!?])\s+(?=[A-Z])", "\n\n", text)
-#     text = re.sub(r"●", "\n\n●", text)
-#     used_emojis = set()
-#     replacements = {
-#         r"\bCPU\b": "🧠 CPU", r"\bprocessor\b": "🧠 Processor",
-#         r"\bRAM\b": "💾 RAM", r"\bSSD\b": "💽 SSD",
-#         r"\bstorage\b": "💽 Storage", r"\bdisplay\b": "🖥️ Display",
-#         r"\bscreen\b": "🖥️ Screen", r"\bbattery\b": "🔋 Battery",
-#         r"\bgraphics\b": "🎮 Graphics", r"\bprice\b": "💰 Price",
-#         r"\bweight\b": "⚖️ Weight",
-#     }
-#     for word, emoji in replacements.items():
-#         if emoji not in used_emojis:
-#             text = re.sub(word, emoji, text, count=1, flags=re.IGNORECASE)
-#             used_emojis.add(emoji)
-#     text = re.sub(r'\n{3,}', '\n\n', text)
-#     return text.strip()
-
-# def truncate_text(text, limit=1500):
-#     if len(text) <= limit:
-#         return text
-#     return text[:limit] + "..."
 
 def format_response(text):
     # Add double newline after sentence-ending punctuation followed by a capital letter
@@ -367,22 +321,22 @@ uploaded_files = st.file_uploader("📄 Upload Laptop Specification PDFs", type=
 
 if "history" not in st.session_state:
     st.session_state.history = []
- 
-# if hf_token and uploaded_file:
-#     with st.spinner("🔍 Extracting and processing your document..."):
-#         document_text = extract_text_from_pdf(uploaded_file)
-#         pdf_chunks = chunk_text(document_text)
 
 if hf_token and uploaded_files:
     with st.spinner("🔍 Extracting and processing your documents..."):
         all_text = ""
         for uploaded_file in uploaded_files:
             document_text = extract_text_from_pdf(uploaded_file)
+            summary = summarize_text_transformers(text)
             all_text += document_text + "\n\n"  # Combine the text from all PDFs
         pdf_chunks = chunk_text(all_text)
         keywords = extract_keywords_tfidf(all_text, top_n=30)
 
- 
+    st.subheader("📄 PDF Summary")
+    st.write(summary)
+
+    st.markdown("---")
+    
     st.subheader("🧠 Chat with your PDF")
     for entry in st.session_state.history:
         with st.chat_message("user"):
@@ -395,22 +349,6 @@ if hf_token and uploaded_files:
                     st.write(entry["assistant"])
 
     question = st.chat_input("💬 Your message")
-    # if question:
-    #     if is_greeting_or_smalltalk(question):
-    #         greeting = get_random_greeting()
-    #         if "recommendation" not in greeting.lower() and "suggestion" not in greeting.lower():
-    #             greeting += "\n\n" + category_suggestion
-    #         ai_reply = greeting
-    #          # Farewell check
-    #     elif is_farewell(question):
-    #         ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
-    #     else:
-    #         with st.spinner("🤔 Thinking..."):
-    #             context = find_relevant_chunk(question, pdf_chunks)
-    #             ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
-
-    #     st.session_state.history.append({"user": question, "assistant": ai_reply})
-    #     st.rerun()
 
     if question:
         if is_greeting_or_smalltalk(question):
