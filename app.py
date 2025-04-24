@@ -19,13 +19,6 @@ from nltk.tokenize import word_tokenize
 import numpy as np
 from nltk.corpus import stopwords
 import pdfplumber
-# from nltk.stem import WordNetLemmatizer
-
-try:
-    stop_words = set(stopwords.words('english'))
-except LookupError:
-    nltk.download('stopwords')
-    stop_words = set(stopwords.words('english'))
 
 # ===== Load API Key =====
 load_dotenv()
@@ -36,6 +29,17 @@ try:
     nltk.data.find('corpora/wordnet')
 except LookupError:
     nltk.download('wordnet')
+
+try:
+    stop_words = set(stopwords.words('english'))
+except LookupError:
+    nltk.download('stopwords')
+    stop_words = set(stopwords.words('english'))
+
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt')
 
 # Setup nltk data path
 nltk_data_path = os.path.join(os.getcwd(), "nltk_data")
