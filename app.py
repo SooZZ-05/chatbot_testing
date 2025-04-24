@@ -180,9 +180,9 @@ def ask_llm_with_history(question, context, history, api_key):
     payload = {
         "model": "mistralai/mistral-7b-instruct",
         "messages": messages,
-        "temperature": 0.2,
+        "temperature": 1.0,
         "top_p": 0.9,
-        "max_tokens": 200
+        # "max_tokens": 500
     }
 
     response = requests.post(url, headers=headers, json=payload)
