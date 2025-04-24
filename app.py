@@ -372,7 +372,7 @@ if hf_token and uploaded_files:
     #save chat to pdf
     with st.sidebar:
         st.markdown("### 💬 Options")
-        preset = st.radio("🧠 Response Length", ["Short", Balanced", "Detailed"], index=1)
+        preset = st.radio("🧠 Response Length", ["Short", "Balanced", "Detailed"], index=1)
         if preset == "Short":
             max_tokens = 300
         elif preset == "Balanced":
