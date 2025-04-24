@@ -15,10 +15,10 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from io import BytesIO
 from datetime import datetime
-from nltk.tokenize import word_tokenize
+# from nltk.tokenize import word_tokenize
 import numpy as np
 from nltk.corpus import stopwords
-import pdfplumber
+# import pdfplumber
 # from nltk.stem import WordNetLemmatizer
 nltk.download('stopwords')
 
@@ -358,6 +358,8 @@ if hf_token and uploaded_files:
     #save chat to pdf
     with st.sidebar:
         st.markdown("### 💬 Options")
+        max_tokens = st.slider("🧠 Max Tokens for Response", min_value=200, max_value=1500, value=700, step=100)
+        st.session_state["max_tokens"] = max_tokens
         if st.session_state.history:
             pdf_file = save_chat_to_pdf(st.session_state.history)
             st.download_button(
