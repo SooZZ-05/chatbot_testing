@@ -8,7 +8,6 @@ import requests
 import random
 import pytz
 import string
-import difflib
 from fpdf import FPDF
 from nltk.stem import WordNetLemmatizer
 from difflib import get_close_matches
@@ -16,8 +15,11 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from io import BytesIO
 from datetime import datetime
+from nltk.tokenize import word_tokenize
 import numpy as np
 from nltk.corpus import stopwords
+import pdfplumber
+# from nltk.stem import WordNetLemmatizer
 nltk.download('stopwords')
 
 # ===== Load API Key =====
@@ -80,22 +82,32 @@ def is_farewell(user_input):
     close = get_close_matches(user_input, farewells, cutoff=0.6)
     return bool(close)
 
-def detect_confused_or_emotional_input(text):
-    text = text.lower().strip()
+# # Ensure required resources are available
+# def download_nltk_data():
+#     for pkg in ["punkt", "stopwords", "wordnet", "omw-1.4"]:
+#         try:
+#             nltk.data.find(pkg)
+#         except LookupError:
+#             nltk.download(pkg, download_dir=nltk_data_path)
 
-    confused_phrases = ["what", "huh", "eh", "how", "?", "what r", "wat", "u talking"]
-    emotional_phrases = ["wtf", "omg", "damn", "crazy", "mad", "angry", "annoyed", "nonsense"]
-    long_hello = re.match(r"^h(e+|a+|i+|o+)+", text)
+# download_nltk_data()
 
-    if any(p in text for p in confused_phrases):
-        return "confused"
-    elif any(p in text for p in emotional_phrases):
-        return "emotional"
-    elif long_hello:
-        return "greeting"
+# # NLP Word Count Function
+# def count_nlp_words(text):
+#     tokens = word_tokenize(text)
+#     tokens = [w.lower() for w in tokens if w.isalpha()]  # remove punctuation/numbers
+#     tokens = [w for w in tokens if w not in stopwords.words("english")]  # remove stopwords
+#     lemmatizer = WordNetLemmatizer()
+#     tokens = [lemmatizer.lemmatize(w) for w in tokens]  # lemmatize
+#     return len(tokens)
 
-    return None
-
+# PDF Text Extractor
+# def extract_text_from_pdf(uploaded_file):
+#     text = ""
+#     with fitz.open(stream=uploaded_file.read(), filetype="pdf") as doc:
+#         for page in doc:
+#             text += page.get_text()
+#     return text
 
 stop_words = set(stopwords.words('english'))
 
@@ -113,6 +125,10 @@ def extract_text_from_pdf(uploaded_file):
     filtered_words = [word for word in words if word.lower() not in stop_words]
 
     return ' '.join(filtered_words)
+
+# def count_words_from_pdf(uploaded_file):
+#     text = extract_text_from_pdf(uploaded_file)
+#     return count_nlp_words(text)
 
 def chunk_text(text, chunk_size=3000, overlap=500):
     chunks = []
@@ -141,7 +157,7 @@ def find_relevant_chunk(question, chunks):
     return chunks[best_index]
 
 # ===== LLM Logic =====
-def ask_llm_with_history(question, context, history, api_key, max_tokens):
+def ask_llm_with_history(question, context, history, api_key):
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -166,7 +182,7 @@ def ask_llm_with_history(question, context, history, api_key, max_tokens):
         "messages": messages,
         "temperature": 1.0,
         "top_p": 0.2,
-        "max_tokens": max_tokens
+        "max_tokens": 200
     }
 
     response = requests.post(url, headers=headers, json=payload)
@@ -178,19 +194,40 @@ def ask_llm_with_history(question, context, history, api_key, max_tokens):
 def is_relevant_question(question, pdf_chunks,keywords):
     # Here we check for the presence of any relevant keywords from the uploaded PDFs
     question = question.lower()
-    additional_keywords = [
-        "study", "business", "gaming", "laptop", "processor", "ram", "ssd", "battery", "weight",
-        "price", "graphics", "display", "screen", "documents", "pdf", "similarities", "differences",
-        "compare", "summary", "count", "words", "word count", "how many words"
-    ]
-    relevant_keywords = keywords.copy()
-    relevant_keywords.extend(additional_keywords)
+    additional_keywords = ["study", "business", "gaming", "laptop", "processor", "ram", "ssd", "battery", "weight", "price", "graphics", "display", "screen", "documents", "pdf", "similarities", "differences", "compare", "summary", "count"]
+    relevant_keywords = keywords
+    for words in additional_keywords:
+        relevant_keywords.append(words)
     if any(keyword in question for keyword in relevant_keywords):
         return True
     return False
 
 
 # ===== Emoji Formatting =====
+# def format_response(text):
+#     text = re.sub(r"(?<=[.!?])\s+(?=[A-Z])", "\n\n", text)
+#     text = re.sub(r"●", "\n\n●", text)
+#     used_emojis = set()
+#     replacements = {
+#         r"\bCPU\b": "🧠 CPU", r"\bprocessor\b": "🧠 Processor",
+#         r"\bRAM\b": "💾 RAM", r"\bSSD\b": "💽 SSD",
+#         r"\bstorage\b": "💽 Storage", r"\bdisplay\b": "🖥️ Display",
+#         r"\bscreen\b": "🖥️ Screen", r"\bbattery\b": "🔋 Battery",
+#         r"\bgraphics\b": "🎮 Graphics", r"\bprice\b": "💰 Price",
+#         r"\bweight\b": "⚖️ Weight",
+#     }
+#     for word, emoji in replacements.items():
+#         if emoji not in used_emojis:
+#             text = re.sub(word, emoji, text, count=1, flags=re.IGNORECASE)
+#             used_emojis.add(emoji)
+#     text = re.sub(r'\n{3,}', '\n\n', text)
+#     return text.strip()
+
+# def truncate_text(text, limit=1500):
+#     if len(text) <= limit:
+#         return text
+#     return text[:limit] + "..."
+
 def format_response(text):
     # Add double newline after sentence-ending punctuation followed by a capital letter
     text = re.sub(r"(?<=[.!?])\s+(?=[A-Z])", "\n\n", text)
@@ -219,7 +256,7 @@ def format_response(text):
     # Perform replacements while ensuring no emoji is replaced more than once
     for word, emoji in replacements.items():
         if emoji not in used_emojis:
-            text = re.sub(word, emoji, text, flags=re.IGNORECASE)
+            text = re.sub(word, emoji, text, count=1, flags=re.IGNORECASE)
             used_emojis.add(emoji)
     
     # Ensure that product numbers and names stay on the same line (no break)
@@ -330,30 +367,18 @@ uploaded_files = st.file_uploader("📄 Upload Laptop Specification PDFs", type=
 
 if "history" not in st.session_state:
     st.session_state.history = []
+ 
+# if hf_token and uploaded_file:
+#     with st.spinner("🔍 Extracting and processing your document..."):
+#         document_text = extract_text_from_pdf(uploaded_file)
+#         pdf_chunks = chunk_text(document_text)
 
 if hf_token and uploaded_files:
     with st.spinner("🔍 Extracting and processing your documents..."):
         all_text = ""
-        document_word_counts = {}
-
         for uploaded_file in uploaded_files:
             document_text = extract_text_from_pdf(uploaded_file)
-            if "document_texts" not in st.session_state:
-                st.session_state.document_texts = {}
-            
-            # Save the text of each document by its filename
-            st.session_state.document_texts[uploaded_file.name] = document_text
-            
-            # Store individual word count
-            word_count = len(document_text.split())
-            document_word_counts[uploaded_file.name] = word_count
-        
-            all_text += document_text + "\n\n"
-        
-        # Save to session state
-        total_word_count = len(all_text.split())
-        st.session_state.total_word_count = total_word_count
-        st.session_state.document_word_counts = document_word_counts
+            all_text += document_text + "\n\n"  # Combine the text from all PDFs
         pdf_chunks = chunk_text(all_text)
         keywords = extract_keywords_tfidf(all_text, top_n=30)
 
@@ -365,101 +390,50 @@ if hf_token and uploaded_files:
         with st.chat_message("assistant"):
             short_reply = truncate_text(entry["assistant"])
             st.write(short_reply)
-            if len(entry["assistant"]) > 1500 or not entry["assistant"].strip().endswith(('.', '!', '?')):
-                with st.expander("🔁Click to view full reply"):
+            if len(entry["assistant"]) > 1500:
+                with st.expander("🔎 View full response"):
                     st.write(entry["assistant"])
 
-# Initialize state variable for question if not set
-if "question" not in st.session_state:
-    st.session_state.question = ""
+    question = st.chat_input("💬 Your message")
+    # if question:
+    #     if is_greeting_or_smalltalk(question):
+    #         greeting = get_random_greeting()
+    #         if "recommendation" not in greeting.lower() and "suggestion" not in greeting.lower():
+    #             greeting += "\n\n" + category_suggestion
+    #         ai_reply = greeting
+    #          # Farewell check
+    #     elif is_farewell(question):
+    #         ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
+    #     else:
+    #         with st.spinner("🤔 Thinking..."):
+    #             context = find_relevant_chunk(question, pdf_chunks)
+    #             ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
 
-# User input (only triggers when user submits)
-user_input = st.chat_input("💬 Your message")
+    #     st.session_state.history.append({"user": question, "assistant": ai_reply})
+    #     st.rerun()
 
-# Store user input to state when submitted
-if user_input:
-    st.session_state.question = user_input
-
-# Process the stored question
-if st.session_state.question:
-    question = st.session_state.question
-    intent = detect_confused_or_emotional_input(question)
-
-    if is_greeting_or_smalltalk(question):
-        ai_reply = get_random_greeting()
-        if "recommendation" not in ai_reply.lower() and "suggestion" not in ai_reply.lower():
-            ai_reply += "\n\n" + category_suggestion
-
-    elif is_farewell(question):
-        ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
-
-    elif intent == "confused":
-        ai_reply = "😅 Sorry if I confused you! Try asking about a laptop's battery life, weight, or performance — I’ve got specs to help!"
-
-    elif intent == "emotional":
-        ai_reply = "😬 Oops! Sounds like something frustrated you. Let me know if I can help explain any laptop specs more clearly."
-
-    elif intent == "greeting":
-        ai_reply = get_random_greeting() + "\n\n" + category_suggestion
-
-    elif "how many words" in question.lower():
-        if "document_word_counts" in st.session_state:
-            word_list = [f"- `{k}`: **{v} words**" for k, v in st.session_state["document_word_counts"].items()]
-            ai_reply = "📄 Here's the word count for each uploaded document:\n\n" + "\n".join(word_list)
-            ai_reply += f"\n\n🧮 **Total words:** {st.session_state['total_word_count']}"
+    if question:
+        if is_greeting_or_smalltalk(question):
+            ai_reply = get_random_greeting()
+            if "recommendation" not in ai_reply.lower() and "suggestion" not in ai_reply.lower():
+                ai_reply += "\n\n" + category_suggestion
+        elif is_farewell(question):
+            ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
         else:
-            ai_reply = "Hmm, I couldn't find the word counts. Try uploading the documents again."
+            if not is_relevant_question(question, pdf_chunks, keywords):
+                ai_reply = "❓ Sorry, I can only help with questions related to the laptop specifications you uploaded."
+            else:
+                with st.spinner("🤔 Thinking..."):
+                    context = find_relevant_chunk(question, pdf_chunks)
+                    ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
 
-    elif len(question.strip().split()) < 4:
-        ai_reply = "🤔 Could you give me a bit more detail? Try asking about a specific laptop spec, like display, battery, or performance."
-
-    elif not is_relevant_question(question, pdf_chunks, keywords):
-        ai_reply = "❓ Sorry, I can only help with questions related to the laptop specifications you uploaded."
-
-    elif "summary" in question.lower():
-        doc_names = list(st.session_state.get("document_word_counts", {}).keys())
-        matched_doc = get_close_matches(question.lower(), [d.lower() for d in doc_names], n=1, cutoff=0.3)
-
-        if matched_doc:
-            matched_name = next(d for d in doc_names if d.lower() == matched_doc[0])
-            content = extract_text_from_pdf(next(f for f in uploaded_files if f.name == matched_name))
-            context = find_relevant_chunk("summarize this", [content])
-            ai_reply = ask_llm_with_history("Please summarize the content of this document.", context, st.session_state.history, hf_token, st.session_state["max_tokens"])
-        else:
-            ai_reply = "📄 Hmm, I couldn't match that to any of the uploaded documents. Can you check the filename or refer to it more clearly?"
-
-    elif is_relevant_question(question, pdf_chunks, keywords):
-        with st.spinner("🤔 Thinking..."):
-            context = find_relevant_chunk(question, pdf_chunks)
-            ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token, st.session_state["max_tokens"])
-
-    else:
-        ai_reply = "🤔 I’m not sure how to help with that. Could you try rephrasing or asking about something in the laptop PDFs?"
-
-    # Safety net: fallback reply if nothing set
-    if 'ai_reply' not in locals():
-        ai_reply = "🤔 Sorry, I didn’t quite catch that. Could you rephrase or be more specific?"
-
-    # Save the chat and clear the stored question to stop reruns
-    st.session_state.history.append({"user": question, "assistant": ai_reply})
-    st.session_state.question = ""  # ✅ clear after handling
-    st.rerun()
-
-
+        st.session_state.history.append({"user": question, "assistant": ai_reply})
+        st.rerun()
 
 
     #save chat to pdf
     with st.sidebar:
         st.markdown("### 💬 Options")
-        preset = st.radio("🧠 Response Length", ["Short", "Balanced", "Detailed"], index=1)
-        if preset == "Short":
-            max_tokens = 300
-        elif preset == "Balanced":
-            max_tokens = 700
-        else:  # Detailed
-            max_tokens = 1200
-
-        st.session_state["max_tokens"] = max_tokens
         if st.session_state.history:
             pdf_file = save_chat_to_pdf(st.session_state.history)
             st.download_button(
