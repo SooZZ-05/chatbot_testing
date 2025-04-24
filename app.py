@@ -426,22 +426,18 @@ if hf_token and uploaded_files:
     #     st.rerun()
 
     if question:
-        custom_reply = handle_custom_questions(question, pdf_texts, pdf_word_counts)
-        
-        if custom_reply:
-            st.chat_message("assistant").write(custom_reply)
-        elif is_farewell(question):
-            st.chat_message("assistant").write("👋 Goodbye! Feel free to come back if you need help again.")
-        elif is_greeting_or_smalltalk(question):
-            st.chat_message("assistant").write(get_random_greeting())
-        elif is_relevant_question(question, pdf_chunks, keywords):
-            context = find_relevant_chunk(question, pdf_chunks)
-            response = ask_llm_with_history(question, context, st.session_state.history, hf_token)
-            st.session_state.history.append({"user": question, "assistant": response})
-            st.chat_message("user").markdown(question)
-            st.chat_message("assistant").markdown(truncate_text(response))
-        else:
-            st.chat_message("assistant").write("❓ Sorry, I didn’t quite get that. Could you rephrase or ask something about the laptops?")
+    if is_farewell(question):
+        st.chat_message("assistant").write("👋 Goodbye! Feel free to come back if you need help again.")
+    elif is_greeting_or_smalltalk(question):
+        st.chat_message("assistant").write(get_random_greeting())
+    elif is_relevant_question(question, pdf_chunks, keywords):
+        context = find_relevant_chunk(question, pdf_chunks)
+        response = ask_llm_with_history(question, context, st.session_state.history, hf_token)
+        st.session_state.history.append({"user": question, "assistant": response})
+        st.chat_message("user").markdown(question)
+        st.chat_message("assistant").markdown(truncate_text(response))
+    else:
+        st.chat_message("assistant").write("❓ Sorry, I didn’t quite get that. Could you rephrase or ask something about the laptops?")
 
     #save chat to pdf
     with st.sidebar:
