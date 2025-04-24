@@ -126,7 +126,7 @@ def find_relevant_chunk(question, chunks):
     return chunks[best_index]
 
 # ===== LLM Logic =====
-def ask_llm_with_history(question, context, history, api_key):
+def ask_llm_with_history(question, context, history, api_key, max_tokens):
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -151,7 +151,7 @@ def ask_llm_with_history(question, context, history, api_key):
         "messages": messages,
         "temperature": 1.0,
         "top_p": 0.2,
-        "max_tokens": 200
+        "max_tokens": max_tokens
     }
 
     response = requests.post(url, headers=headers, json=payload)
@@ -349,7 +349,7 @@ if hf_token and uploaded_files:
             else:
                 with st.spinner("🤔 Thinking..."):
                     context = find_relevant_chunk(question, pdf_chunks)
-                    ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
+                    ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token, st.session_state["max_tokens"])
 
         st.session_state.history.append({"user": question, "assistant": ai_reply})
         st.rerun()
