@@ -182,7 +182,7 @@ def ask_llm_with_history(question, context, history, api_key):
         "messages": messages,
         "temperature": 1.0,
         "top_p": 0.9,
-        # "max_tokens": 500
+        "max_tokens": 500
     }
 
     response = requests.post(url, headers=headers, json=payload)
