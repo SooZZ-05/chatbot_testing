@@ -98,7 +98,8 @@ def extract_text_from_pdf(uploaded_file):
 
     # Remove stopwords
     words = text.split()
-    filtered_words = [word for word in words if word.lower() not in stop_words]
+    tokens = word_tokenize(text)
+    filtered_words = [word for word in words if word.lower() not in stop_words and word.isalpha()]
 
     return ' '.join(filtered_words)
 
