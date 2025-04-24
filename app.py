@@ -163,10 +163,13 @@ def ask_llm_with_history(question, context, history, api_key, max_tokens):
 def is_relevant_question(question, pdf_chunks,keywords):
     # Here we check for the presence of any relevant keywords from the uploaded PDFs
     question = question.lower()
-    additional_keywords = ["study", "business", "gaming", "laptop", "processor", "ram", "ssd", "battery", "weight", "price", "graphics", "display", "screen", "documents", "pdf", "similarities", "differences", "compare", "summary", "count"]
-    relevant_keywords = keywords
-    for words in additional_keywords:
-        relevant_keywords.append(words)
+    additional_keywords = [
+        "study", "business", "gaming", "laptop", "processor", "ram", "ssd", "battery", "weight",
+        "price", "graphics", "display", "screen", "documents", "pdf", "similarities", "differences",
+        "compare", "summary", "count", "words", "word count", "how many words"
+    ]
+    relevant_keywords = keywords.copy()
+    relevant_keywords.extend(additional_keywords)
     if any(keyword in question for keyword in relevant_keywords):
         return True
     return False
@@ -345,7 +348,7 @@ if hf_token and uploaded_files:
             short_reply = truncate_text(entry["assistant"])
             st.write(short_reply)
             if len(entry["assistant"]) > 1500 or not entry["assistant"].strip().endswith(('.', '!', '?')):
-                with st.expander("🔁Click to view or regenerate full reply"):
+                with st.expander("🔁Click to view full reply"):
                     st.write(entry["assistant"])
 
     question = st.chat_input("💬 Your message")
@@ -357,6 +360,15 @@ if hf_token and uploaded_files:
                 ai_reply += "\n\n" + category_suggestion
         elif is_farewell(question):
             ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
+        elif len(question.strip().split()) < 4:
+            ai_reply = "🤔 Could you give me a bit more detail? Try asking about a specific laptop spec, like display, battery, or performance."
+        elif "how many words" in question.lower():
+            if "document_word_counts" in st.session_state:
+                word_list = [f"- `{k}`: **{v} words**" for k, v in st.session_state["document_word_counts"].items()]
+                ai_reply = "📄 Here's the word count for each uploaded document:\n\n" + "\n".join(word_list)
+                ai_reply += f"\n\n🧮 **Total words:** {st.session_state['total_word_count']}"
+            else:
+                ai_reply = "Hmm, I couldn't find the word counts. Try uploading the documents again."
         else:
             if not is_relevant_question(question, pdf_chunks, keywords):
                 ai_reply = "❓ Sorry, I can only help with questions related to the laptop specifications you uploaded."
