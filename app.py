@@ -370,62 +370,62 @@ if hf_token and uploaded_files:
 
     question = st.chat_input("💬 Your message")
 
-if question:
-    # Detect fuzzy intent
-    intent = detect_confused_or_emotional_input(question)
-
-    if is_greeting_or_smalltalk(question):
-        ai_reply = get_random_greeting()
-        if "recommendation" not in ai_reply.lower() and "suggestion" not in ai_reply.lower():
-            ai_reply += "\n\n" + category_suggestion
-
-    elif is_farewell(question):
-        ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
-
-    elif intent == "confused":
-        ai_reply = "😅 Sorry if I confused you! Try asking about a laptop's battery life, weight, or performance — I’ve got specs to help!"
-
-    elif intent == "emotional":
-        ai_reply = "😬 Oops! Sounds like something frustrated you. Let me know if I can help explain any laptop specs more clearly."
-
-    elif intent == "greeting":
-        ai_reply = get_random_greeting() + "\n\n" + category_suggestion
-
-    elif "how many words" in question.lower():
-        if "document_word_counts" in st.session_state:
-            word_list = [f"- `{k}`: **{v} words**" for k, v in st.session_state["document_word_counts"].items()]
-            ai_reply = "📄 Here's the word count for each uploaded document:\n\n" + "\n".join(word_list)
-            ai_reply += f"\n\n🧮 **Total words:** {st.session_state['total_word_count']}"
+    if question:
+        # Detect fuzzy intent
+        intent = detect_confused_or_emotional_input(question)
+    
+        if is_greeting_or_smalltalk(question):
+            ai_reply = get_random_greeting()
+            if "recommendation" not in ai_reply.lower() and "suggestion" not in ai_reply.lower():
+                ai_reply += "\n\n" + category_suggestion
+    
+        elif is_farewell(question):
+            ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
+    
+        elif intent == "confused":
+            ai_reply = "😅 Sorry if I confused you! Try asking about a laptop's battery life, weight, or performance — I’ve got specs to help!"
+    
+        elif intent == "emotional":
+            ai_reply = "😬 Oops! Sounds like something frustrated you. Let me know if I can help explain any laptop specs more clearly."
+    
+        elif intent == "greeting":
+            ai_reply = get_random_greeting() + "\n\n" + category_suggestion
+    
+        elif "how many words" in question.lower():
+            if "document_word_counts" in st.session_state:
+                word_list = [f"- `{k}`: **{v} words**" for k, v in st.session_state["document_word_counts"].items()]
+                ai_reply = "📄 Here's the word count for each uploaded document:\n\n" + "\n".join(word_list)
+                ai_reply += f"\n\n🧮 **Total words:** {st.session_state['total_word_count']}"
+            else:
+                ai_reply = "Hmm, I couldn't find the word counts. Try uploading the documents again."
+    
+        elif len(question.strip().split()) < 4:
+            ai_reply = "🤔 Could you give me a bit more detail? Try asking about a specific laptop spec, like display, battery, or performance."
+    
+        elif not is_relevant_question(question, pdf_chunks, keywords):
+            ai_reply = "❓ Sorry, I can only help with questions related to the laptop specifications you uploaded."
+    
+        elif "summary" in question.lower():
+            doc_names = list(st.session_state.get("document_word_counts", {}).keys())
+            matched_doc = get_close_matches(question.lower(), [d.lower() for d in doc_names], n=1, cutoff=0.3)
+    
+            if matched_doc:
+                matched_name = next(d for d in doc_names if d.lower() == matched_doc[0])
+                content = extract_text_from_pdf(next(f for f in uploaded_files if f.name == matched_name))
+                context = find_relevant_chunk("summarize this", [content])
+                ai_reply = ask_llm_with_history("Please summarize the content of this document.", context, st.session_state.history, hf_token, st.session_state["max_tokens"])
+            else:
+                ai_reply = "📄 Hmm, I couldn't match that to any of the uploaded documents. Can you check the filename or refer to it more clearly?"
+    
+        # General fallback to LLM if question is relevant
+        elif is_relevant_question(question, pdf_chunks, keywords):
+            with st.spinner("🤔 Thinking..."):
+                context = find_relevant_chunk(question, pdf_chunks)
+                ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token, st.session_state["max_tokens"])
+    
+        # Final catch-all
         else:
-            ai_reply = "Hmm, I couldn't find the word counts. Try uploading the documents again."
-
-    elif len(question.strip().split()) < 4:
-        ai_reply = "🤔 Could you give me a bit more detail? Try asking about a specific laptop spec, like display, battery, or performance."
-
-    elif not is_relevant_question(question, pdf_chunks, keywords):
-        ai_reply = "❓ Sorry, I can only help with questions related to the laptop specifications you uploaded."
-
-    elif "summary" in question.lower():
-        doc_names = list(st.session_state.get("document_word_counts", {}).keys())
-        matched_doc = get_close_matches(question.lower(), [d.lower() for d in doc_names], n=1, cutoff=0.3)
-
-        if matched_doc:
-            matched_name = next(d for d in doc_names if d.lower() == matched_doc[0])
-            content = extract_text_from_pdf(next(f for f in uploaded_files if f.name == matched_name))
-            context = find_relevant_chunk("summarize this", [content])
-            ai_reply = ask_llm_with_history("Please summarize the content of this document.", context, st.session_state.history, hf_token, st.session_state["max_tokens"])
-        else:
-            ai_reply = "📄 Hmm, I couldn't match that to any of the uploaded documents. Can you check the filename or refer to it more clearly?"
-
-    # General fallback to LLM if question is relevant
-    elif is_relevant_question(question, pdf_chunks, keywords):
-        with st.spinner("🤔 Thinking..."):
-            context = find_relevant_chunk(question, pdf_chunks)
-            ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token, st.session_state["max_tokens"])
-
-    # Final catch-all
-    else:
-        ai_reply = "🤔 I’m not sure how to help with that. Could you try rephrasing or asking about something in the laptop PDFs?"
+            ai_reply = "🤔 I’m not sure how to help with that. Could you try rephrasing or asking about something in the laptop PDFs?"
 
     st.session_state.history.append({"user": question, "assistant": ai_reply})
     st.rerun()
