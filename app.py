@@ -351,6 +351,7 @@ if hf_token and uploaded_files:
             all_text += document_text + "\n\n"
         
         # Save to session state
+        total_word_count = len(all_text.split())
         st.session_state.total_word_count = total_word_count
         st.session_state.document_word_counts = document_word_counts
         pdf_chunks = chunk_text(all_text)
