@@ -19,7 +19,6 @@ from nltk.tokenize import word_tokenize
 import numpy as np
 from nltk.corpus import stopwords
 import pdfplumber
-from transformers import pipeline
 # from nltk.stem import WordNetLemmatizer
 nltk.download('stopwords')
 
@@ -99,7 +98,7 @@ def extract_text_from_pdf(uploaded_file):
     filtered_words = [word for word in words if word.lower() not in stop_words]
 
     return ' '.join(filtered_words)
-    
+
 def chunk_text(text, chunk_size=3000, overlap=500):
     chunks = []
     for i in range(0, len(text), chunk_size - overlap):
@@ -125,16 +124,6 @@ def find_relevant_chunk(question, chunks):
     similarities = cosine_similarity(question_vector, chunk_vectors).flatten()
     best_index = similarities.argmax()
     return chunks[best_index]
-
-summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
-
-def summarize_text_transformers(text):
-    chunks = [text[i:i+1000] for i in range(0, len(text), 1000)]
-    summary = ""
-    for chunk in chunks:
-        summary += summarizer(chunk, max_length=130, min_length=30, do_sample=False)[0]['summary_text']
-    return summary
-
 
 # ===== LLM Logic =====
 def ask_llm_with_history(question, context, history, api_key):
@@ -182,6 +171,8 @@ def is_relevant_question(question, pdf_chunks,keywords):
         return True
     return False
 
+
+# ===== Emoji Formatting =====
 def format_response(text):
     # Add double newline after sentence-ending punctuation followed by a capital letter
     text = re.sub(r"(?<=[.!?])\s+(?=[A-Z])", "\n\n", text)
@@ -327,16 +318,11 @@ if hf_token and uploaded_files:
         all_text = ""
         for uploaded_file in uploaded_files:
             document_text = extract_text_from_pdf(uploaded_file)
-            summary = summarize_text_transformers(document_text)
             all_text += document_text + "\n\n"  # Combine the text from all PDFs
         pdf_chunks = chunk_text(all_text)
         keywords = extract_keywords_tfidf(all_text, top_n=30)
 
-    st.subheader("📄 PDF Summary")
-    st.write(summary)
-
-    st.markdown("---")
-    
+ 
     st.subheader("🧠 Chat with your PDF")
     for entry in st.session_state.history:
         with st.chat_message("user"):
