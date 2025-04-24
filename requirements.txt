@@ -9,5 +9,3 @@ pytz
 fitz
 PyMuPDF
 pdfplumber
-transformers
-torch
