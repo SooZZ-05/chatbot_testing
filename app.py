@@ -316,9 +316,23 @@ if "history" not in st.session_state:
 if hf_token and uploaded_files:
     with st.spinner("🔍 Extracting and processing your documents..."):
         all_text = ""
+        document_word_counts = {}
+
         for uploaded_file in uploaded_files:
             document_text = extract_text_from_pdf(uploaded_file)
-            all_text += document_text + "\n\n"  # Combine the text from all PDFs
+            
+            # Store individual word count
+            word_count = len(document_text.split())
+            document_word_counts[uploaded_file.name] = word_count
+        
+            all_text += document_text + "\n\n"
+        
+        # Store total word count
+        total_word_count = len(all_text.split())
+        
+        # Save to session state
+        st.session_state.total_word_count = total_word_count
+        st.session_state.document_word_counts = document_word_counts
         pdf_chunks = chunk_text(all_text)
         keywords = extract_keywords_tfidf(all_text, top_n=30)
 
