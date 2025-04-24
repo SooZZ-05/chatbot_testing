@@ -202,32 +202,6 @@ def is_relevant_question(question, pdf_chunks,keywords):
         return True
     return False
 
-
-# ===== Emoji Formatting =====
-# def format_response(text):
-#     text = re.sub(r"(?<=[.!?])\s+(?=[A-Z])", "\n\n", text)
-#     text = re.sub(r"●", "\n\n●", text)
-#     used_emojis = set()
-#     replacements = {
-#         r"\bCPU\b": "🧠 CPU", r"\bprocessor\b": "🧠 Processor",
-#         r"\bRAM\b": "💾 RAM", r"\bSSD\b": "💽 SSD",
-#         r"\bstorage\b": "💽 Storage", r"\bdisplay\b": "🖥️ Display",
-#         r"\bscreen\b": "🖥️ Screen", r"\bbattery\b": "🔋 Battery",
-#         r"\bgraphics\b": "🎮 Graphics", r"\bprice\b": "💰 Price",
-#         r"\bweight\b": "⚖️ Weight",
-#     }
-#     for word, emoji in replacements.items():
-#         if emoji not in used_emojis:
-#             text = re.sub(word, emoji, text, count=1, flags=re.IGNORECASE)
-#             used_emojis.add(emoji)
-#     text = re.sub(r'\n{3,}', '\n\n', text)
-#     return text.strip()
-
-# def truncate_text(text, limit=1500):
-#     if len(text) <= limit:
-#         return text
-#     return text[:limit] + "..."
-
 def format_response(text):
     # Add double newline after sentence-ending punctuation followed by a capital letter
     text = re.sub(r"(?<=[.!?])\s+(?=[A-Z])", "\n\n", text)
@@ -278,8 +252,6 @@ def truncate_text(text, limit=1500):
     
     # Otherwise, truncate the text and append "..." to indicate more content
     return text[:limit] + "..."
-
-
 
 
 # ===== Chat Saving Button =====
@@ -395,40 +367,39 @@ if hf_token and uploaded_files:
                     st.write(entry["assistant"])
 
     question = st.chat_input("💬 Your message")
+
     # if question:
     #     if is_greeting_or_smalltalk(question):
-    #         greeting = get_random_greeting()
-    #         if "recommendation" not in greeting.lower() and "suggestion" not in greeting.lower():
-    #             greeting += "\n\n" + category_suggestion
-    #         ai_reply = greeting
-    #          # Farewell check
+    #         ai_reply = get_random_greeting()
+    #         if "recommendation" not in ai_reply.lower() and "suggestion" not in ai_reply.lower():
+    #             ai_reply += "\n\n" + category_suggestion
     #     elif is_farewell(question):
     #         ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
     #     else:
-    #         with st.spinner("🤔 Thinking..."):
-    #             context = find_relevant_chunk(question, pdf_chunks)
-    #             ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
+    #         if not is_relevant_question(question, pdf_chunks, keywords):
+    #             ai_reply = "❓ Sorry, I can only help with questions related to the laptop specifications you uploaded."
+    #         else:
+    #             with st.spinner("🤔 Thinking..."):
+    #                 context = find_relevant_chunk(question, pdf_chunks)
+    #                 ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
 
     #     st.session_state.history.append({"user": question, "assistant": ai_reply})
     #     st.rerun()
 
     if question:
-        if is_greeting_or_smalltalk(question):
-            ai_reply = get_random_greeting()
-            if "recommendation" not in ai_reply.lower() and "suggestion" not in ai_reply.lower():
-                ai_reply += "\n\n" + category_suggestion
-        elif is_farewell(question):
-            ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
+        if is_farewell(question):
+            st.chat_message("assistant").write("👋 Goodbye! Feel free to come back if you need help again.")
+        elif is_greeting_or_smalltalk(question):
+            st.chat_message("assistant").write(get_random_greeting())
+        elif is_relevant_question(question, pdf_chunks, keywords):
+            context = find_relevant_chunk(question, pdf_chunks)
+            response = ask_llm_with_history(question, context, st.session_state.history, hf_token)
+            st.session_state.history.append({"user": question, "assistant": response})
+            st.chat_message("user").markdown(question)
+            st.chat_message("assistant").markdown(truncate_text(response))
         else:
-            if not is_relevant_question(question, pdf_chunks, keywords):
-                ai_reply = "❓ Sorry, I can only help with questions related to the laptop specifications you uploaded."
-            else:
-                with st.spinner("🤔 Thinking..."):
-                    context = find_relevant_chunk(question, pdf_chunks)
-                    ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
+            st.chat_message("assistant").write("❓ Sorry, I didn’t quite get that. Could you rephrase or ask something about the laptops?")
 
-        st.session_state.history.append({"user": question, "assistant": ai_reply})
-        st.rerun()
 
 
     #save chat to pdf
