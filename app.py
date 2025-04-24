@@ -20,7 +20,12 @@ import numpy as np
 from nltk.corpus import stopwords
 import pdfplumber
 # from nltk.stem import WordNetLemmatizer
-nltk.download('stopwords')
+
+try:
+    stop_words = set(stopwords.words('english'))
+except LookupError:
+    nltk.download('stopwords')
+    stop_words = set(stopwords.words('english'))
 
 # ===== Load API Key =====
 load_dotenv()
@@ -81,8 +86,6 @@ def is_farewell(user_input):
     user_input = user_input.lower().strip()
     close = get_close_matches(user_input, farewells, cutoff=0.6)
     return bool(close)
-
-stop_words = set(stopwords.words('english'))
 
 def extract_text_from_pdf(uploaded_file):
     text = ""
@@ -164,12 +167,9 @@ def is_relevant_question(question, pdf_chunks,keywords):
     # Here we check for the presence of any relevant keywords from the uploaded PDFs
     question = question.lower()
     additional_keywords = ["study", "business", "gaming", "laptop", "processor", "ram", "ssd", "battery", "weight", "price", "graphics", "display", "screen", "documents", "pdf", "similarities", "differences", "compare", "summary", "count"]
-    relevant_keywords = keywords
-    for words in additional_keywords:
-        relevant_keywords.append(words)
-    if any(keyword in question for keyword in relevant_keywords):
-        return True
-    return False
+    relevant_keywords = set(keywords + additional_keywords)
+    
+    return any(keyword in question for keyword in relevant_keywords)
 
 def format_response(text):
     # Add double newline after sentence-ending punctuation followed by a capital letter
