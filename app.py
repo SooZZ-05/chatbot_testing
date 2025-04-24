@@ -327,7 +327,7 @@ if hf_token and uploaded_files:
         all_text = ""
         for uploaded_file in uploaded_files:
             document_text = extract_text_from_pdf(uploaded_file)
-            summary = summarize_text_transformers(text)
+            summary = summarize_text_transformers(document_text)
             all_text += document_text + "\n\n"  # Combine the text from all PDFs
         pdf_chunks = chunk_text(all_text)
         keywords = extract_keywords_tfidf(all_text, top_n=30)
