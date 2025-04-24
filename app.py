@@ -82,33 +82,6 @@ def is_farewell(user_input):
     close = get_close_matches(user_input, farewells, cutoff=0.6)
     return bool(close)
 
-# # Ensure required resources are available
-# def download_nltk_data():
-#     for pkg in ["punkt", "stopwords", "wordnet", "omw-1.4"]:
-#         try:
-#             nltk.data.find(pkg)
-#         except LookupError:
-#             nltk.download(pkg, download_dir=nltk_data_path)
-
-# download_nltk_data()
-
-# # NLP Word Count Function
-# def count_nlp_words(text):
-#     tokens = word_tokenize(text)
-#     tokens = [w.lower() for w in tokens if w.isalpha()]  # remove punctuation/numbers
-#     tokens = [w for w in tokens if w not in stopwords.words("english")]  # remove stopwords
-#     lemmatizer = WordNetLemmatizer()
-#     tokens = [lemmatizer.lemmatize(w) for w in tokens]  # lemmatize
-#     return len(tokens)
-
-# PDF Text Extractor
-# def extract_text_from_pdf(uploaded_file):
-#     text = ""
-#     with fitz.open(stream=uploaded_file.read(), filetype="pdf") as doc:
-#         for page in doc:
-#             text += page.get_text()
-#     return text
-
 stop_words = set(stopwords.words('english'))
 
 def extract_text_from_pdf(uploaded_file):
@@ -125,10 +98,6 @@ def extract_text_from_pdf(uploaded_file):
     filtered_words = [word for word in words if word.lower() not in stop_words]
 
     return ' '.join(filtered_words)
-
-# def count_words_from_pdf(uploaded_file):
-#     text = extract_text_from_pdf(uploaded_file)
-#     return count_nlp_words(text)
 
 def chunk_text(text, chunk_size=3000, overlap=500):
     chunks = []
@@ -202,32 +171,6 @@ def is_relevant_question(question, pdf_chunks,keywords):
         return True
     return False
 
-
-# ===== Emoji Formatting =====
-# def format_response(text):
-#     text = re.sub(r"(?<=[.!?])\s+(?=[A-Z])", "\n\n", text)
-#     text = re.sub(r"●", "\n\n●", text)
-#     used_emojis = set()
-#     replacements = {
-#         r"\bCPU\b": "🧠 CPU", r"\bprocessor\b": "🧠 Processor",
-#         r"\bRAM\b": "💾 RAM", r"\bSSD\b": "💽 SSD",
-#         r"\bstorage\b": "💽 Storage", r"\bdisplay\b": "🖥️ Display",
-#         r"\bscreen\b": "🖥️ Screen", r"\bbattery\b": "🔋 Battery",
-#         r"\bgraphics\b": "🎮 Graphics", r"\bprice\b": "💰 Price",
-#         r"\bweight\b": "⚖️ Weight",
-#     }
-#     for word, emoji in replacements.items():
-#         if emoji not in used_emojis:
-#             text = re.sub(word, emoji, text, count=1, flags=re.IGNORECASE)
-#             used_emojis.add(emoji)
-#     text = re.sub(r'\n{3,}', '\n\n', text)
-#     return text.strip()
-
-# def truncate_text(text, limit=1500):
-#     if len(text) <= limit:
-#         return text
-#     return text[:limit] + "..."
-
 def format_response(text):
     # Add double newline after sentence-ending punctuation followed by a capital letter
     text = re.sub(r"(?<=[.!?])\s+(?=[A-Z])", "\n\n", text)
@@ -278,8 +221,6 @@ def truncate_text(text, limit=1500):
     
     # Otherwise, truncate the text and append "..." to indicate more content
     return text[:limit] + "..."
-
-
 
 
 # ===== Chat Saving Button =====
@@ -395,22 +336,6 @@ if hf_token and uploaded_files:
                     st.write(entry["assistant"])
 
     question = st.chat_input("💬 Your message")
-    # if question:
-    #     if is_greeting_or_smalltalk(question):
-    #         greeting = get_random_greeting()
-    #         if "recommendation" not in greeting.lower() and "suggestion" not in greeting.lower():
-    #             greeting += "\n\n" + category_suggestion
-    #         ai_reply = greeting
-    #          # Farewell check
-    #     elif is_farewell(question):
-    #         ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
-    #     else:
-    #         with st.spinner("🤔 Thinking..."):
-    #             context = find_relevant_chunk(question, pdf_chunks)
-    #             ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
-
-    #     st.session_state.history.append({"user": question, "assistant": ai_reply})
-    #     st.rerun()
 
     if question:
         if is_greeting_or_smalltalk(question):
