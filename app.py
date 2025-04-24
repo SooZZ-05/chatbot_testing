@@ -147,14 +147,51 @@ def extract_keywords_tfidf(text, top_n=100):
     
     return top_keywords.tolist()
 
-def find_relevant_chunk(question, chunks):
+# def find_relevant_chunk(question, chunks):
+#     documents = chunks + [question]
+#     vectorizer = TfidfVectorizer().fit(documents)
+#     chunk_vectors = vectorizer.transform(chunks)
+#     question_vector = vectorizer.transform([question])
+#     similarities = cosine_similarity(question_vector, chunk_vectors).flatten()
+#     best_index = similarities.argmax()
+#     return chunks[best_index]
+
+def find_relevant_chunk(question, chunks, top_n=2):
     documents = chunks + [question]
     vectorizer = TfidfVectorizer().fit(documents)
     chunk_vectors = vectorizer.transform(chunks)
     question_vector = vectorizer.transform([question])
     similarities = cosine_similarity(question_vector, chunk_vectors).flatten()
-    best_index = similarities.argmax()
-    return chunks[best_index]
+    
+    top_indices = similarities.argsort()[-top_n:][::-1]
+    top_chunks = [chunks[i] for i in top_indices if similarities[i] > 0.1]  # Only if it's actually similar
+    return "\n\n".join(top_chunks)
+
+def handle_custom_questions(question, pdf_texts, pdf_word_counts):
+    question = question.lower().strip()
+    
+    # Match word count query
+    match_count = re.search(r'how many words.*document\s*(\d+)', question)
+    if match_count:
+        index = int(match_count.group(1)) - 1
+        if 0 <= index < len(pdf_word_counts):
+            return f"📝 Document {index + 1} contains approximately **{pdf_word_counts[index]} words**."
+        else:
+            return "⚠️ I couldn't find that document. Please check the number."
+
+    # Match summary request
+    match_summary = re.search(r'(summar(y|ise|ize)|give me a summary).*document\s*(\d+)', question)
+    if match_summary:
+        index = int(match_summary.group(3)) - 1
+        if 0 <= index < len(pdf_texts):
+            # Optionally use the LLM for summarizing, but restrict it to the doc only
+            context = pdf_texts[index]
+            summary = ask_llm_with_history("Please summarize this document.", context, [], hf_token)
+            return summary
+        else:
+            return "⚠️ I couldn't find that document. Please check the number."
+    
+    return None  # Not a custom handled question
 
 # ===== LLM Logic =====
 def ask_llm_with_history(question, context, history, api_key):
@@ -339,18 +376,20 @@ uploaded_files = st.file_uploader("📄 Upload Laptop Specification PDFs", type=
 
 if "history" not in st.session_state:
     st.session_state.history = []
- 
-# if hf_token and uploaded_file:
-#     with st.spinner("🔍 Extracting and processing your document..."):
-#         document_text = extract_text_from_pdf(uploaded_file)
-#         pdf_chunks = chunk_text(document_text)
+
+pdf_texts = []
+pdf_chunks = []
+pdf_word_counts = []
 
 if hf_token and uploaded_files:
     with st.spinner("🔍 Extracting and processing your documents..."):
-        all_text = ""
         for uploaded_file in uploaded_files:
-            document_text = extract_text_from_pdf(uploaded_file)
-            all_text += document_text + "\n\n"  # Combine the text from all PDFs
+            raw_text = extract_text_from_pdf(uploaded_file)  # Raw text without punctuation and stopwords
+            cleaned_text = raw_text.lower().translate(str.maketrans('', '', string.punctuation))
+            pdf_texts.append(cleaned_text)
+            pdf_word_counts.append(len(cleaned_text.split()))  # Store word count
+
+        all_text = "\n\n".join(pdf_texts)  # Combine all PDFs
         pdf_chunks = chunk_text(all_text)
         keywords = extract_keywords_tfidf(all_text, top_n=30)
 
@@ -387,7 +426,11 @@ if hf_token and uploaded_files:
     #     st.rerun()
 
     if question:
-        if is_farewell(question):
+        custom_reply = handle_custom_questions(question, pdf_texts, pdf_word_counts)
+        
+        if custom_reply:
+            st.chat_message("assistant").write(custom_reply)
+        elif is_farewell(question):
             st.chat_message("assistant").write("👋 Goodbye! Feel free to come back if you need help again.")
         elif is_greeting_or_smalltalk(question):
             st.chat_message("assistant").write(get_random_greeting())
@@ -399,8 +442,6 @@ if hf_token and uploaded_files:
             st.chat_message("assistant").markdown(truncate_text(response))
         else:
             st.chat_message("assistant").write("❓ Sorry, I didn’t quite get that. Could you rephrase or ask something about the laptops?")
-
-
 
     #save chat to pdf
     with st.sidebar:
