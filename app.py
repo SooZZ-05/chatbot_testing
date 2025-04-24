@@ -380,7 +380,7 @@ if hf_token and uploaded_files:
         else:  # Detailed
             max_tokens = 1200
 
-    st.session_state["max_tokens"] = max_tokens
+        st.session_state["max_tokens"] = max_tokens
         if st.session_state.history:
             pdf_file = save_chat_to_pdf(st.session_state.history)
             st.download_button(
