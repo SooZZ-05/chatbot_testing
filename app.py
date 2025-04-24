@@ -147,51 +147,14 @@ def extract_keywords_tfidf(text, top_n=100):
     
     return top_keywords.tolist()
 
-# def find_relevant_chunk(question, chunks):
-#     documents = chunks + [question]
-#     vectorizer = TfidfVectorizer().fit(documents)
-#     chunk_vectors = vectorizer.transform(chunks)
-#     question_vector = vectorizer.transform([question])
-#     similarities = cosine_similarity(question_vector, chunk_vectors).flatten()
-#     best_index = similarities.argmax()
-#     return chunks[best_index]
-
-def find_relevant_chunk(question, chunks, top_n=2):
+def find_relevant_chunk(question, chunks):
     documents = chunks + [question]
     vectorizer = TfidfVectorizer().fit(documents)
     chunk_vectors = vectorizer.transform(chunks)
     question_vector = vectorizer.transform([question])
     similarities = cosine_similarity(question_vector, chunk_vectors).flatten()
-    
-    top_indices = similarities.argsort()[-top_n:][::-1]
-    top_chunks = [chunks[i] for i in top_indices if similarities[i] > 0.1]  # Only if it's actually similar
-    return "\n\n".join(top_chunks)
-
-def handle_custom_questions(question, pdf_texts, pdf_word_counts):
-    question = question.lower().strip()
-    
-    # Match word count query
-    match_count = re.search(r'how many words.*document\s*(\d+)', question)
-    if match_count:
-        index = int(match_count.group(1)) - 1
-        if 0 <= index < len(pdf_word_counts):
-            return f"📝 Document {index + 1} contains approximately **{pdf_word_counts[index]} words**."
-        else:
-            return "⚠️ I couldn't find that document. Please check the number."
-
-    # Match summary request
-    match_summary = re.search(r'(summar(y|ise|ize)|give me a summary).*document\s*(\d+)', question)
-    if match_summary:
-        index = int(match_summary.group(3)) - 1
-        if 0 <= index < len(pdf_texts):
-            # Optionally use the LLM for summarizing, but restrict it to the doc only
-            context = pdf_texts[index]
-            summary = ask_llm_with_history("Please summarize this document.", context, [], hf_token)
-            return summary
-        else:
-            return "⚠️ I couldn't find that document. Please check the number."
-    
-    return None  # Not a custom handled question
+    best_index = similarities.argmax()
+    return chunks[best_index]
 
 # ===== LLM Logic =====
 def ask_llm_with_history(question, context, history, api_key):
@@ -238,6 +201,32 @@ def is_relevant_question(question, pdf_chunks,keywords):
     if any(keyword in question for keyword in relevant_keywords):
         return True
     return False
+
+
+# ===== Emoji Formatting =====
+# def format_response(text):
+#     text = re.sub(r"(?<=[.!?])\s+(?=[A-Z])", "\n\n", text)
+#     text = re.sub(r"●", "\n\n●", text)
+#     used_emojis = set()
+#     replacements = {
+#         r"\bCPU\b": "🧠 CPU", r"\bprocessor\b": "🧠 Processor",
+#         r"\bRAM\b": "💾 RAM", r"\bSSD\b": "💽 SSD",
+#         r"\bstorage\b": "💽 Storage", r"\bdisplay\b": "🖥️ Display",
+#         r"\bscreen\b": "🖥️ Screen", r"\bbattery\b": "🔋 Battery",
+#         r"\bgraphics\b": "🎮 Graphics", r"\bprice\b": "💰 Price",
+#         r"\bweight\b": "⚖️ Weight",
+#     }
+#     for word, emoji in replacements.items():
+#         if emoji not in used_emojis:
+#             text = re.sub(word, emoji, text, count=1, flags=re.IGNORECASE)
+#             used_emojis.add(emoji)
+#     text = re.sub(r'\n{3,}', '\n\n', text)
+#     return text.strip()
+
+# def truncate_text(text, limit=1500):
+#     if len(text) <= limit:
+#         return text
+#     return text[:limit] + "..."
 
 def format_response(text):
     # Add double newline after sentence-ending punctuation followed by a capital letter
@@ -289,6 +278,8 @@ def truncate_text(text, limit=1500):
     
     # Otherwise, truncate the text and append "..." to indicate more content
     return text[:limit] + "..."
+
+
 
 
 # ===== Chat Saving Button =====
@@ -376,20 +367,18 @@ uploaded_files = st.file_uploader("📄 Upload Laptop Specification PDFs", type=
 
 if "history" not in st.session_state:
     st.session_state.history = []
-
-pdf_texts = []
-pdf_chunks = []
-pdf_word_counts = []
+ 
+# if hf_token and uploaded_file:
+#     with st.spinner("🔍 Extracting and processing your document..."):
+#         document_text = extract_text_from_pdf(uploaded_file)
+#         pdf_chunks = chunk_text(document_text)
 
 if hf_token and uploaded_files:
     with st.spinner("🔍 Extracting and processing your documents..."):
+        all_text = ""
         for uploaded_file in uploaded_files:
-            raw_text = extract_text_from_pdf(uploaded_file)  # Raw text without punctuation and stopwords
-            cleaned_text = raw_text.lower().translate(str.maketrans('', '', string.punctuation))
-            pdf_texts.append(cleaned_text)
-            pdf_word_counts.append(len(cleaned_text.split()))  # Store word count
-
-        all_text = "\n\n".join(pdf_texts)  # Combine all PDFs
+            document_text = extract_text_from_pdf(uploaded_file)
+            all_text += document_text + "\n\n"  # Combine the text from all PDFs
         pdf_chunks = chunk_text(all_text)
         keywords = extract_keywords_tfidf(all_text, top_n=30)
 
@@ -406,38 +395,41 @@ if hf_token and uploaded_files:
                     st.write(entry["assistant"])
 
     question = st.chat_input("💬 Your message")
-
     # if question:
     #     if is_greeting_or_smalltalk(question):
-    #         ai_reply = get_random_greeting()
-    #         if "recommendation" not in ai_reply.lower() and "suggestion" not in ai_reply.lower():
-    #             ai_reply += "\n\n" + category_suggestion
+    #         greeting = get_random_greeting()
+    #         if "recommendation" not in greeting.lower() and "suggestion" not in greeting.lower():
+    #             greeting += "\n\n" + category_suggestion
+    #         ai_reply = greeting
+    #          # Farewell check
     #     elif is_farewell(question):
     #         ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
     #     else:
-    #         if not is_relevant_question(question, pdf_chunks, keywords):
-    #             ai_reply = "❓ Sorry, I can only help with questions related to the laptop specifications you uploaded."
-    #         else:
-    #             with st.spinner("🤔 Thinking..."):
-    #                 context = find_relevant_chunk(question, pdf_chunks)
-    #                 ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
+    #         with st.spinner("🤔 Thinking..."):
+    #             context = find_relevant_chunk(question, pdf_chunks)
+    #             ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
 
     #     st.session_state.history.append({"user": question, "assistant": ai_reply})
     #     st.rerun()
 
     if question:
-    if is_farewell(question):
-        st.chat_message("assistant").write("👋 Goodbye! Feel free to come back if you need help again.")
-    elif is_greeting_or_smalltalk(question):
-        st.chat_message("assistant").write(get_random_greeting())
-    elif is_relevant_question(question, pdf_chunks, keywords):
-        context = find_relevant_chunk(question, pdf_chunks)
-        response = ask_llm_with_history(question, context, st.session_state.history, hf_token)
-        st.session_state.history.append({"user": question, "assistant": response})
-        st.chat_message("user").markdown(question)
-        st.chat_message("assistant").markdown(truncate_text(response))
-    else:
-        st.chat_message("assistant").write("❓ Sorry, I didn’t quite get that. Could you rephrase or ask something about the laptops?")
+        if is_greeting_or_smalltalk(question):
+            ai_reply = get_random_greeting()
+            if "recommendation" not in ai_reply.lower() and "suggestion" not in ai_reply.lower():
+                ai_reply += "\n\n" + category_suggestion
+        elif is_farewell(question):
+            ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
+        else:
+            if not is_relevant_question(question, pdf_chunks, keywords):
+                ai_reply = "❓ Sorry, I can only help with questions related to the laptop specifications you uploaded."
+            else:
+                with st.spinner("🤔 Thinking..."):
+                    context = find_relevant_chunk(question, pdf_chunks)
+                    ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
+
+        st.session_state.history.append({"user": question, "assistant": ai_reply})
+        st.rerun()
+
 
     #save chat to pdf
     with st.sidebar:
