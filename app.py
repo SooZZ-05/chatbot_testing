@@ -25,10 +25,7 @@ import warnings
 # Load API Key from environment
 load_dotenv()
 hf_token = os.getenv("OPENROUTER_API_KEY", st.secrets.get("OPENROUTER_API_KEY"))
-if not hf_token:
-    st.error("🔐 API key not found. Please set the OpenRouter API key in your environment variables or Streamlit secrets.")
-else:
-    print("API Key loaded successfully:", hf_token)
+
 # NLTK Setup
 nltk.download('stopwords')
 nltk.download('punkt')
@@ -94,7 +91,7 @@ def ask_llm_with_history(question, context, history, api_key):
     messages.append({"role": "user", "content": question})
 
     payload = {
-        "model": "mistralai/mistral-7b-instruct:free",
+        "model": "mistralai/mistral-7b-instruct",
         "messages": messages,
         "temperature": 0.3,
         "max_tokens": 200
