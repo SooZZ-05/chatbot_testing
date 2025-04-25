@@ -10,3 +10,4 @@ pdfplumber
 openai
 sentence-transformers
 chromadb
+fitz
