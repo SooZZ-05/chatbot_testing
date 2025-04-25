@@ -1,7 +1,11 @@
-langchain
-langchain-community
 streamlit
-pdfplumber
+langchain
 nltk
+fitz
+pdfplumber
 requests
+pytz
+fpdf
+scikit-learn
 faiss-cpu
+python-dotenv
