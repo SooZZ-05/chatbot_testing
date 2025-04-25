@@ -19,7 +19,8 @@ from nltk.tokenize import word_tokenize
 import numpy as np
 from nltk.corpus import stopwords
 import pdfplumber
-# from nltk.stem import WordNetLemmatizer
+from sentence_transformers import SentenceTransformer
+import chromadb
 nltk.download('stopwords')
 
 # ===== Load API Key =====
@@ -89,15 +90,7 @@ def extract_text_from_pdf(uploaded_file):
     with fitz.open(stream=uploaded_file.read(), filetype="pdf") as doc:
         for page in doc:
             text += page.get_text()
-
-    # Remove punctuation
-    text = text.translate(str.maketrans('', '', string.punctuation))
-
-    # Remove stopwords
-    words = text.split()
-    filtered_words = [word for word in words if word.lower() not in stop_words]
-
-    return ' '.join(filtered_words)
+    return text
 
 def chunk_text(text, chunk_size=3000, overlap=500):
     chunks = []
@@ -124,6 +117,36 @@ def find_relevant_chunk(question, chunks):
     similarities = cosine_similarity(question_vector, chunk_vectors).flatten()
     best_index = similarities.argmax()
     return chunks[best_index]
+
+model_name = 'all-MiniLM-L6-v2'
+model = SentenceTransformer(model_name)
+
+# Initialize ChromaDB client (in-memory for simplicity)
+client = chromadb.Client()
+collection_name = "laptop_specs"
+if collection_name in client.list_collections():
+    collection = client.get_collection(name=collection_name)
+else:
+    collection = client.create_collection(name=collection_name)
+
+def embed_and_store(chunks):
+    embeddings = model.encode(chunks)
+    ids = [f"chunk_{i}" for i in range(len(chunks))]
+    collection.add(
+        embeddings=embeddings.tolist(),
+        ids=ids,
+        documents=chunks
+    )
+    return collection
+
+def find_relevant_chunks_semantic(question, collection, top_n=3):
+    question_embedding = model.encode(question)
+    results = collection.query(
+        query_embeddings=[question_embedding.tolist()],
+        n_results=top_n
+    )
+    relevant_chunks = results['documents'][0] if results and results['documents'] else []
+    return relevant_chunks
 
 # ===== LLM Logic =====
 def ask_llm_with_history(question, context, history, api_key):
@@ -321,7 +344,7 @@ if hf_token and uploaded_files:
             all_text += document_text + "\n\n"  # Combine the text from all PDFs
         pdf_chunks = chunk_text(all_text)
         keywords = extract_keywords_tfidf(all_text, top_n=30)
-
+        vector_store = embed_and_store(pdf_chunks)
  
     st.subheader("🧠 Chat with your PDF")
     for entry in st.session_state.history:
@@ -344,12 +367,13 @@ if hf_token and uploaded_files:
         elif is_farewell(question):
             ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
         else:
-            if not is_relevant_question(question, pdf_chunks, keywords):
-                ai_reply = "❓ Sorry, I can only help with questions related to the laptop specifications you uploaded."
-            else:
-                with st.spinner("🤔 Thinking..."):
-                    context = find_relevant_chunk(question, pdf_chunks)
+            with st.spinner("🤔 Thinking..."):
+                relevant_chunks = find_relevant_chunks_semantic(question, vector_store)
+                if relevant_chunks:
+                    context = "\n\n".join(relevant_chunks)
                     ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
+                else:
+                    ai_reply = "❓ Sorry, I couldn't find relevant information in the documents to answer your question."
 
         st.session_state.history.append({"user": question, "assistant": ai_reply})
         st.rerun()
