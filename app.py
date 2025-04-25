@@ -163,13 +163,32 @@ def ask_llm_with_history(question, context, history, api_key):
 def is_relevant_question(question, pdf_chunks,keywords):
     # Here we check for the presence of any relevant keywords from the uploaded PDFs
     question = question.lower()
-    additional_keywords = ["study", "business", "gaming", "laptop", "processor", "ram", "ssd", "battery", "weight", "price", "graphics", "display", "screen", "documents", "pdf", "similarities", "differences", "compare", "summary", "count"]
-    relevant_keywords = keywords
+    additional_keywords = [
+        "study", "business", "gaming", "laptop", "processor", "ram", "ssd", "battery", "weight", "price", 
+        "graphics", "display", "screen", "documents", "pdf", "similarities", "differences", "compare", 
+        "summary", "word count", "count", "overview", "total words", "total pages", "summary of document"
+    ]
+    relevant_keywords = keywords + additional_keywords
     for words in additional_keywords:
         relevant_keywords.append(words)
     if any(keyword in question for keyword in relevant_keywords):
         return True
+    if "summary" in question or "word" in question or "total word" in question:
+        return True
     return False
+
+def handle_special_queries(question, pdf_text):
+    if "summary" in question:
+        # Return a truncated summary of the document text (or the first few paragraphs)
+        summary = pdf_text[:1000]  # Adjust this as needed for your summary length
+        return f"Here's a brief summary of the document:\n\n{summary}..."
+    
+    # Check if the question is asking for the word count
+    elif "word count" in question.lower() or "total words" in question.lower():
+        word_count = len(pdf_text.split())
+        return f"The document contains approximately {word_count} words."
+    
+    return None
 
 def format_response(text):
     # Add double newline after sentence-ending punctuation followed by a capital letter
@@ -354,9 +373,13 @@ if hf_token and uploaded_files:
             if not is_relevant_question(question, pdf_chunks, keywords):
                 ai_reply = "❓ Sorry, I can only help with questions related to the laptop specifications you uploaded."
             else:
-                with st.spinner("🤔 Thinking..."):
-                    context = find_relevant_chunk(question, pdf_chunks)
-                    ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
+                special_reply = handle_special_queries(question, all_text)  # `all_text` is the text from all PDFs combined
+                if special_reply:
+                    ai_reply = special_reply
+                else:
+                    with st.spinner("🤔 Thinking..."):
+                        context = find_relevant_chunk(question, pdf_chunks)
+                        ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
 
         st.session_state.history.append({"user": question, "assistant": ai_reply})
         st.rerun()
