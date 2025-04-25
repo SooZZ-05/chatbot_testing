@@ -312,13 +312,24 @@ if "history" not in st.session_state:
 if hf_token and uploaded_files:
     with st.spinner("🔍 Extracting and processing your documents..."):
         all_text = ""
+        document_texts = []
         for uploaded_file in uploaded_files:
             document_text = extract_text_from_pdf(uploaded_file)
+            document_texts.append(document_text)
             all_text += document_text + "\n\n"  # Combine the text from all PDFs
         pdf_chunks = chunk_text(all_text)
         keywords = extract_keywords_tfidf(all_text, top_n=30)
 
- 
+    for idx, document_text in enumerate(document_texts):
+            # Example of handling a summary or word count for each document
+            document_word_count = len(document_text.split())
+            st.write(f"Document {idx + 1} Word Count: {document_word_count}")
+
+            # If you want to summarize each document separately
+            document_chunks = chunk_text(document_text)
+            document_keywords = extract_keywords_tfidf(document_text, top_n=10)  # Extract top 10 keywords for each document
+            st.write(f"Keywords for Document {idx + 1}: {', '.join(document_keywords)}")
+
     st.subheader("🧠 Chat with your PDF")
     for entry in st.session_state.history:
         with st.chat_message("user"):
