@@ -10,3 +10,5 @@ fitz
 PyMuPDF
 pdfplumber
 openai
+sentence-transformers
+chromadb
