@@ -1,11 +1,11 @@
 streamlit
-langchain
+pymupdf
 nltk
-fitz
-pdfplumber
 requests
-pytz
-fpdf
 scikit-learn
-faiss-cpu
 python-dotenv
+fpdf
+pytz
+fitz
+PyMuPDF
+pdfplumber
