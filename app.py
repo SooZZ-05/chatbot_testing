@@ -160,41 +160,9 @@ def ask_llm_with_history(question, context, history, api_key):
     else:
         return f"❌ Error {response.status_code}: {response.text}"
 
-def is_relevant_question(question, pdf_chunks,keywords, document_texts, uploaded_files):
+def is_relevant_question(question, pdf_chunks,keywords):
     # Here we check for the presence of any relevant keywords from the uploaded PDFs
     question = question.lower()
-    if "word" in question and ("document" in question or ".pdf" in question):
-        # Match for ordinal numbers like "1st document", "2nd document", etc.
-        ordinal_match = re.search(r"(\d+)(st|nd|rd|th)?\s+document", question)
-        if ordinal_match:
-            doc_index = int(ordinal_match.group(1)) - 1  # Convert to zero-based index
-            if 0 <= doc_index < len(document_texts):
-                word_count = len(document_texts[doc_index].split())
-                return f"The {ordinal_match.group(0)} has {word_count} words."
-        
-        # Match for text-based references like "first document", "second document", etc.
-        text_based_match = re.search(r"(first|second|third|fourth|fifth|sixth)\s+document", question)
-        if text_based_match:
-            text_to_index = {
-                "first": 0, "second": 1, "third": 2, "fourth": 3, "fifth": 4, "sixth": 5
-            }
-            doc_index = text_to_index.get(text_based_match.group(1))
-            if doc_index is not None and 0 <= doc_index < len(document_texts):
-                word_count = len(document_texts[doc_index].split())
-                return f"The {text_based_match.group(0)} has {word_count} words."
-
-        # Match for file name references like "computer.pdf"
-        file_match = re.search(r"(\S+\.pdf)", question)
-        if file_match:
-            filename = file_match.group(1).lower()
-            for idx, uploaded_file in enumerate(uploaded_files):
-                if filename in uploaded_file.name.lower():
-                    word_count = len(document_texts[idx].split())
-                    return f"The file {filename} has {word_count} words."
-        
-        # Catch-all response for word count related questions without specific document references
-        return "❓ Could you specify which document you are referring to for word count?"
-
     additional_keywords = ["study", "business", "gaming", "laptop", "processor", "ram", "ssd", "battery", "weight", "price", "graphics", "display", "screen", "documents", "pdf", "similarities", "differences", "compare", "summary", "count"]
     relevant_keywords = keywords
     for words in additional_keywords:
