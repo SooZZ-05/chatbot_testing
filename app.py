@@ -19,7 +19,15 @@ from nltk.tokenize import word_tokenize
 import numpy as np
 from nltk.corpus import stopwords
 import pdfplumber
-# from nltk.stem import WordNetLemmatizer
+from langchain.text_splitter import CharacterTextSplitter
+from langchain.embeddings import OpenAIEmbeddings
+from langchain.vectorstores import FAISS
+from langchain.chat_models import ChatOpenAI
+from langchain.memory import ConversationBufferMemory
+from langchain.chains import ConversationalRetrievalChain
+from htmlTemplates import css, bot_template, user_template
+from langchain.llms import HuggingFaceHub
+
 nltk.download('stopwords')
 
 # ===== Load API Key =====
@@ -160,7 +168,7 @@ def ask_llm_with_history(question, context, history, api_key):
     else:
         return f"❌ Error {response.status_code}: {response.text}"
 
-def is_relevant_question(question, pdf_chunks,keywords):
+def is_relevant_question(question, pdf_chunks, keywords):
     # Here we check for the presence of any relevant keywords from the uploaded PDFs
     question = question.lower()
     additional_keywords = [
@@ -241,89 +249,11 @@ def truncate_text(text, limit=1500):
     # Otherwise, truncate the text and append "..." to indicate more content
     return text[:limit] + "..."
 
-
-# ===== Chat Saving Button =====
-def estimate_multicell_height(pdf, text, width, line_height):
-    lines = pdf.multi_cell(width, line_height, text, split_only=True)
-    return len(lines) * line_height + 4  # +4 for padding
-
-def save_chat_to_pdf(chat_history):
-    from fpdf import FPDF
-    from datetime import datetime
-    import pytz
-    from io import BytesIO
-    import re
-
-    def strip_emojis(text):
-        return re.sub(r'[^\x00-\x7F]+', '', text)
-
-    def remove_newlines(text):
-        return re.sub(r'\s*\n\s*', ' ', text.strip())
-
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_auto_page_break(auto=False)
-    page_height = 297  # A4 height in mm
-    margin_top = 10
-    margin_bottom = 10
-    usable_height = page_height - margin_top - margin_bottom
-    line_height = 8
-    box_spacing = 6
-    box_width = 190
-
-    # Header
-    pdf.set_font("Arial", 'B', 16)
-    pdf.cell(0, 10, "Chat History", ln=True, align="C")
-    pdf.set_font("Arial", '', 10)
-    malaysia_time = datetime.now(pytz.timezone("Asia/Kuala_Lumpur")).strftime("%B %d, %Y %H:%M")
-    pdf.cell(0, 10, f"Exported on {malaysia_time} (MYT)", ln=True, align="C")
-    pdf.ln(5)
-
-    pdf.set_font("Arial", '', 12)
-
-    for entry in chat_history:
-        user_msg = strip_emojis(entry["user"]).strip()
-        assistant_msg = remove_newlines(strip_emojis(entry["assistant"]).strip())
-
-        label_user = f"You:\n{user_msg}"
-        label_assistant = f"Assistant:\n{assistant_msg}"
-
-        # Estimate heights
-        user_box_height = estimate_multicell_height(pdf, label_user, box_width, line_height)
-        assistant_box_height = estimate_multicell_height(pdf, label_assistant, box_width, line_height)
-        total_pair_height = user_box_height + assistant_box_height + box_spacing
-
-        # If not enough space, start new page
-        if pdf.get_y() + total_pair_height > usable_height:
-            pdf.add_page()
-
-        # Render You box
-        y_start = pdf.get_y()
-        pdf.rect(10, y_start, box_width, user_box_height)
-        pdf.set_xy(12, y_start + 2)
-        pdf.multi_cell(0, line_height, label_user)
-        pdf.ln(2)
-
-        # Render Assistant box
-        y_start = pdf.get_y()
-        pdf.rect(10, y_start, box_width, assistant_box_height)
-        pdf.set_xy(12, y_start + 2)
-        pdf.set_text_color(0, 102, 204)
-        pdf.multi_cell(0, line_height, label_assistant)
-        pdf.set_text_color(0, 0, 0)
-        pdf.ln(4)
-
-    # Output PDF
-    pdf_bytes = pdf.output(dest='S').encode('latin1')
-    return BytesIO(pdf_bytes)
-    
 # ===== Streamlit UI =====
 st.set_page_config(page_title="💻 Laptop Chatbot", page_icon="💬", layout="wide")
 st.title("💻 Laptop Recommendation Chatbot")
- 
-# uploaded_file = st.file_uploader("📄 Upload a Laptop Specification PDF", type=["pdf"])
-uploaded_files = st.file_uploader("📄 Upload Laptop Specification PDFs", type=["pdf"], accept_multiple_files=True)
 
+uploaded_files = st.file_uploader("📄 Upload Laptop Specification PDFs", type=["pdf"], accept_multiple_files=True)
 
 if "history" not in st.session_state:
     st.session_state.history = []
@@ -384,7 +314,7 @@ if hf_token and uploaded_files:
         st.session_state.history.append({"user": question, "assistant": ai_reply})
         st.rerun()
 
-    #save chat to pdf
+    # Save chat to pdf
     with st.sidebar:
         st.markdown("### 💬 Options")
         if st.session_state.history:
