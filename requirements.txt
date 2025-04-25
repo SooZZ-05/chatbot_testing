@@ -6,8 +6,6 @@ scikit-learn
 python-dotenv
 fpdf
 pytz
-fitz
-PyMuPDF
 pdfplumber
 openai
 sentence-transformers
