@@ -11,3 +11,4 @@ openai
 sentence-transformers
 chromadb
 fitz
+sqlite3
