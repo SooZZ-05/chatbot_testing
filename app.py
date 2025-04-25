@@ -19,7 +19,7 @@ from nltk.tokenize import word_tokenize
 import numpy as np
 from nltk.corpus import stopwords
 import pdfplumber
-from collections import defaultdict
+# from nltk.stem import WordNetLemmatizer
 nltk.download('stopwords')
 
 # ===== Load API Key =====
@@ -55,11 +55,11 @@ greeting_keywords = [
 ]
 
 farewells = [
-    "bye", "goodbye", "see ya", "see you", "later",
-    "i'm done", "thank you", "thanks, that's all", "talk to you later",
-    "exit", "quit", "close", "end", "good night", "goodbye for now"
-]
-
+        "bye", "goodbye", "see ya", "see you", "later",
+        "i'm done", "thank you", "thanks, that's all", "talk to you later",
+        "exit", "quit", "close", "end", "good night", "goodbye for now"
+    ]
+    
 category_suggestion = (
     "Would you like suggestions for laptops used in:\n\n"
     "1. Study 📚\n"
@@ -160,12 +160,13 @@ def ask_llm_with_history(question, context, history, api_key):
     else:
         return f"❌ Error {response.status_code}: {response.text}"
 
-def is_relevant_question(question, document_chunks, all_keywords):
+def is_relevant_question(question, pdf_chunks,keywords):
     # Here we check for the presence of any relevant keywords from the uploaded PDFs
     question = question.lower()
-    relevant_keywords = all_keywords
     additional_keywords = ["study", "business", "gaming", "laptop", "processor", "ram", "ssd", "battery", "weight", "price", "graphics", "display", "screen", "documents", "pdf", "similarities", "differences", "compare", "summary", "count"]
-    relevant_keywords += additional_keywords
+    relevant_keywords = keywords
+    for words in additional_keywords:
+        relevant_keywords.append(words)
     if any(keyword in question for keyword in relevant_keywords):
         return True
     return False
@@ -220,6 +221,7 @@ def truncate_text(text, limit=1500):
     
     # Otherwise, truncate the text and append "..." to indicate more content
     return text[:limit] + "..."
+
 
 # ===== Chat Saving Button =====
 def estimate_multicell_height(pdf, text, width, line_height):
@@ -299,22 +301,25 @@ def save_chat_to_pdf(chat_history):
 # ===== Streamlit UI =====
 st.set_page_config(page_title="💻 Laptop Chatbot", page_icon="💬", layout="wide")
 st.title("💻 Laptop Recommendation Chatbot")
-
+ 
+# uploaded_file = st.file_uploader("📄 Upload a Laptop Specification PDF", type=["pdf"])
 uploaded_files = st.file_uploader("📄 Upload Laptop Specification PDFs", type=["pdf"], accept_multiple_files=True)
+
 
 if "history" not in st.session_state:
     st.session_state.history = []
 
 if hf_token and uploaded_files:
     with st.spinner("🔍 Extracting and processing your documents..."):
-        document_texts = []
+        all_text = ""
         for uploaded_file in uploaded_files:
             document_text = extract_text_from_pdf(uploaded_file)
-            document_texts.append(document_text)
-        document_chunks = [chunk_text(doc) for doc in document_texts]
-        all_keywords = [extract_keywords_tfidf(doc, top_n=30) for doc in document_texts]
+            all_text += document_text + "\n\n"  # Combine the text from all PDFs
+        pdf_chunks = chunk_text(all_text)
+        keywords = extract_keywords_tfidf(all_text, top_n=30)
 
-    st.subheader("🧠 Chat with your PDFs")
+ 
+    st.subheader("🧠 Chat with your PDF")
     for entry in st.session_state.history:
         with st.chat_message("user"):
             st.markdown(entry["user"])
@@ -335,16 +340,11 @@ if hf_token and uploaded_files:
         elif is_farewell(question):
             ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
         else:
-            document_number = re.search(r"first document|second document", question, re.IGNORECASE)
-            if document_number:
-                doc_index = 0 if "first" in document_number.group() else 1
-                context = find_relevant_chunk(question, document_chunks[doc_index])
-                ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
+            if not is_relevant_question(question, pdf_chunks, keywords):
+                ai_reply = "❓ Sorry, I can only help with questions related to the laptop specifications you uploaded."
             else:
-                if not is_relevant_question(question, document_chunks, all_keywords):
-                    ai_reply = "❓ Sorry, I can only help with questions related to the laptop specifications you uploaded."
-                else:
-                    context = find_relevant_chunk(question, [chunk for doc in document_chunks for chunk in doc])
+                with st.spinner("🤔 Thinking..."):
+                    context = find_relevant_chunk(question, pdf_chunks)
                     ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
 
         st.session_state.history.append({"user": question, "assistant": ai_reply})
