@@ -102,7 +102,7 @@ def ask_llm_with_history(question, context, history, api_key):
     messages.append({"role": "user", "content": question})
 
     payload = {
-        "model": "mistralai/mistral-7b-instruct",
+        "model": "mistralai/mistral-7b-instruct:free",
         "messages": messages,
         "temperature": 0.3,
         "top_p": 0.9
