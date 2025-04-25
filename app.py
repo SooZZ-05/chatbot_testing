@@ -122,7 +122,7 @@ model_name = 'all-MiniLM-L6-v2'
 model = SentenceTransformer(model_name)
 
 # Initialize ChromaDB client (in-memory for simplicity)
-client = chromadb.Client()
+client = chromadb.EphemeralClient()
 collection_name = "laptop_specs"
 if collection_name in client.list_collections():
     collection = client.get_collection(name=collection_name)
