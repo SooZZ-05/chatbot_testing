@@ -19,8 +19,7 @@ from nltk.tokenize import word_tokenize
 import numpy as np
 from nltk.corpus import stopwords
 import pdfplumber
-from sentence_transformers import SentenceTransformer
-import faiss
+# from nltk.stem import WordNetLemmatizer
 nltk.download('stopwords')
 
 # ===== Load API Key =====
@@ -90,7 +89,15 @@ def extract_text_from_pdf(uploaded_file):
     with fitz.open(stream=uploaded_file.read(), filetype="pdf") as doc:
         for page in doc:
             text += page.get_text()
-    return text
+
+    # Remove punctuation
+    text = text.translate(str.maketrans('', '', string.punctuation))
+
+    # Remove stopwords
+    words = text.split()
+    filtered_words = [word for word in words if word.lower() not in stop_words]
+
+    return ' '.join(filtered_words)
 
 def chunk_text(text, chunk_size=3000, overlap=500):
     chunks = []
@@ -117,40 +124,6 @@ def find_relevant_chunk(question, chunks):
     similarities = cosine_similarity(question_vector, chunk_vectors).flatten()
     best_index = similarities.argmax()
     return chunks[best_index]
-
-model_name = 'all-MiniLM-L6-v2'
-model = SentenceTransformer(model_name)
-
-embedding_dim = 384
-index = faiss.IndexFlatL2(embedding_dim)
-
-def embed_and_store_faiss(chunks):
-    # Embed the chunks using the SentenceTransformer model
-    embeddings = model.encode(chunks)
-    
-    # Convert to numpy array (FAISS requires numpy array format)
-    embeddings = np.array(embeddings).astype('float32')
-
-    # Add embeddings to the FAISS index
-    index.add(embeddings)
-
-def find_relevant_chunks_faiss(question, top_n=3):
-    question_embedding = model.encode([question])
-    question_embedding = np.array(question_embedding).astype('float32')
-    
-    # Search the FAISS index for the most similar chunks
-    distances, indices = index.search(question_embedding, top_n)
-    
-    # Get the corresponding chunks based on the indices
-    relevant_chunks = [chunks[i] for i in indices[0]]
-    
-    return relevant_chunks
-
-# Store embeddings for chunks
-embed_and_store_faiss(pdf_chunks)
-
-# Use the FAISS search to get relevant chunks for a question
-relevant_chunks = find_relevant_chunks_faiss(question)
 
 # ===== LLM Logic =====
 def ask_llm_with_history(question, context, history, api_key):
@@ -251,6 +224,9 @@ def truncate_text(text, limit=1500):
     # Otherwise, truncate the text and append "..." to indicate more content
     return text[:limit] + "..."
 
+
+
+
 # ===== Chat Saving Button =====
 def estimate_multicell_height(pdf, text, width, line_height):
     lines = pdf.multi_cell(width, line_height, text, split_only=True)
@@ -345,7 +321,7 @@ if hf_token and uploaded_files:
             all_text += document_text + "\n\n"  # Combine the text from all PDFs
         pdf_chunks = chunk_text(all_text)
         keywords = extract_keywords_tfidf(all_text, top_n=30)
-        vector_store = embed_and_store(pdf_chunks)
+
  
     st.subheader("🧠 Chat with your PDF")
     for entry in st.session_state.history:
@@ -368,13 +344,12 @@ if hf_token and uploaded_files:
         elif is_farewell(question):
             ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
         else:
-            with st.spinner("🤔 Thinking..."):
-                relevant_chunks = find_relevant_chunks_faiss(question)
-                if relevant_chunks:
-                    context = "\n\n".join(relevant_chunks)
+            if not is_relevant_question(question, pdf_chunks, keywords):
+                ai_reply = "❓ Sorry, I can only help with questions related to the laptop specifications you uploaded."
+            else:
+                with st.spinner("🤔 Thinking..."):
+                    context = find_relevant_chunk(question, pdf_chunks)
                     ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
-                else:
-                    ai_reply = "❓ Sorry, I couldn't find relevant information in the documents to answer your question."
 
         st.session_state.history.append({"user": question, "assistant": ai_reply})
         st.rerun()
