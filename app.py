@@ -213,7 +213,7 @@ def save_chat_to_pdf(chat_history):
     # Output PDF
     pdf_bytes = pdf.output(dest='S').encode('latin1')
     return BytesIO(pdf_bytes)
-    
+
 # ===== Streamlit UI =====
 st.set_page_config(page_title="💻 Laptop Chatbot", page_icon="💬", layout="wide")
 st.title("💻 Laptop Recommendation Chatbot")
@@ -246,6 +246,8 @@ if hf_token and uploaded_file:
             if "recommendation" not in greeting.lower() and "suggestion" not in greeting.lower():
                 greeting += "\n\n" + category_suggestion
             ai_reply = greeting
+        elif "summary for document 1" in question.lower():
+            ai_reply = ask_llm_with_history("Summarize the following content:", document_text, st.session_state.history, hf_token)
         else:
             with st.spinner("🤔 Thinking..."):
                 context = find_relevant_chunk(question, pdf_chunks)
