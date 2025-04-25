@@ -20,6 +20,7 @@ import numpy as np
 from nltk.corpus import stopwords
 import pdfplumber
 import openai
+import warnings
 
 # Load API Key from environment
 load_dotenv()
@@ -32,12 +33,16 @@ nltk.download('punkt')
 stop_words = set(stopwords.words('english'))
 lemmatizer = WordNetLemmatizer()
 
+warnings.filterwarnings("ignore", message=".*CropBox missing.*")
+
 # Function to extract text from PDFs
 def extract_text_from_pdf(uploaded_file):
     text = ""
     with pdfplumber.open(uploaded_file) as pdf:
         for page in pdf.pages:
-            text += page.extract_text()
+            crop_box = page.cropbox if hasattr(page, 'cropbox') else page.mediabox
+            page_text = page.within_bbox(crop_box).extract_text()
+            text += page_text
 
     # Remove punctuation
     text = text.translate(str.maketrans('', '', string.punctuation))
