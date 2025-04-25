@@ -9,3 +9,4 @@ pytz
 fitz
 PyMuPDF
 pdfplumber
+openai
