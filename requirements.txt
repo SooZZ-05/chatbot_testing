@@ -9,6 +9,5 @@ pytz
 pdfplumber
 openai
 sentence-transformers
-chromadb
 fitz
-sqlite3
+faiss-cpu
