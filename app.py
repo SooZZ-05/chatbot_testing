@@ -19,32 +19,23 @@ from nltk.tokenize import word_tokenize
 import numpy as np
 from nltk.corpus import stopwords
 import pdfplumber
+# from nltk.stem import WordNetLemmatizer
+nltk.download('stopwords')
 
 # ===== Load API Key =====
 load_dotenv()
 hf_token = os.getenv("OPENROUTER_API_KEY", st.secrets.get("OPENROUTER_API_KEY"))
 
 # ===== NLTK Resource Setup =====
-# Setup nltk data path
-nltk_data_path = os.path.join(os.getcwd(), "nltk_data")
-os.makedirs(nltk_data_path, exist_ok=True)
-nltk.data.path.append(nltk_data_path)
-
 try:
     nltk.data.find('corpora/wordnet')
 except LookupError:
     nltk.download('wordnet')
 
-try:
-    stop_words = set(stopwords.words('english'))
-except LookupError:
-    nltk.download('stopwords')
-    stop_words = set(stopwords.words('english'))
-
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt')
+# Setup nltk data path
+nltk_data_path = os.path.join(os.getcwd(), "nltk_data")
+os.makedirs(nltk_data_path, exist_ok=True)
+nltk.data.path.append(nltk_data_path)
 
 # ===== Greeting Logic =====
 lemmatizer = WordNetLemmatizer()
@@ -91,6 +82,8 @@ def is_farewell(user_input):
     close = get_close_matches(user_input, farewells, cutoff=0.6)
     return bool(close)
 
+stop_words = set(stopwords.words('english'))
+
 def extract_text_from_pdf(uploaded_file):
     text = ""
     with fitz.open(stream=uploaded_file.read(), filetype="pdf") as doc:
@@ -102,8 +95,7 @@ def extract_text_from_pdf(uploaded_file):
 
     # Remove stopwords
     words = text.split()
-    tokens = word_tokenize(text)
-    filtered_words = [word for word in words if word.lower() not in stop_words and word.isalpha()]
+    filtered_words = [word for word in words if word.lower() not in stop_words]
 
     return ' '.join(filtered_words)
 
@@ -172,9 +164,12 @@ def is_relevant_question(question, pdf_chunks,keywords):
     # Here we check for the presence of any relevant keywords from the uploaded PDFs
     question = question.lower()
     additional_keywords = ["study", "business", "gaming", "laptop", "processor", "ram", "ssd", "battery", "weight", "price", "graphics", "display", "screen", "documents", "pdf", "similarities", "differences", "compare", "summary", "count"]
-    relevant_keywords = set(keywords + additional_keywords)
-    
-    return any(keyword in question for keyword in relevant_keywords)
+    relevant_keywords = keywords
+    for words in additional_keywords:
+        relevant_keywords.append(words)
+    if any(keyword in question for keyword in relevant_keywords):
+        return True
+    return False
 
 def format_response(text):
     # Add double newline after sentence-ending punctuation followed by a capital letter
@@ -313,11 +308,6 @@ uploaded_files = st.file_uploader("📄 Upload Laptop Specification PDFs", type=
 
 if "history" not in st.session_state:
     st.session_state.history = []
- 
-# if hf_token and uploaded_file:
-#     with st.spinner("🔍 Extracting and processing your document..."):
-#         document_text = extract_text_from_pdf(uploaded_file)
-#         pdf_chunks = chunk_text(document_text)
 
 if hf_token and uploaded_files:
     with st.spinner("🔍 Extracting and processing your documents..."):
