@@ -96,13 +96,6 @@ def extract_text_from_pdf(file_bytes):
         for page in doc:
             text += page.get_text()
 
-    # Remove punctuation
-    text = text.translate(str.maketrans('', '', string.punctuation))
-
-    # Remove stopwords
-    words = text.split()
-    filtered_words = [word for word in words if word.lower() not in stop_words]
-
     return ' '.join(filtered_words)
 
 def chunk_text(text, chunk_size=3000, overlap=500):
