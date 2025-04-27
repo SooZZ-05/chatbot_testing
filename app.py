@@ -150,7 +150,7 @@ def ask_llm_with_history(question, context, history, api_key):
     messages = [{"role": "system", "content": 
         "You are a friendly AI assistant who gives casual and helpful laptop advice. "
         "Study all the laptop information and ONLY use the internal knowledge you gain from the info belows. "
-        "Respond in a clear, structured format using numbered bullet points for lists, table only for comparision. Each item should start on a new line. "
+        "Respond in a clear, structured format using numbered bullet points for lists. Each item should start on a new line. "
         "Avoid formal tones or sign-offs. Be friendly, clear, and conversational.\n\n"
         f"[INFO SOURCE]\n{context}"}]
 
