@@ -2,7 +2,7 @@ import os
 import nltk
 import streamlit as st
 from dotenv import load_dotenv
-import fitz  # PyMuPDF
+import PyMuPDF as fitz
 import re
 import requests
 import random
