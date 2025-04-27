@@ -8,6 +8,9 @@ import requests
 import random
 import pytz
 import string
+import numpy as np
+import pdfplumber
+import faiss
 from fpdf import FPDF
 from nltk.stem import WordNetLemmatizer
 from difflib import get_close_matches
@@ -16,9 +19,9 @@ from sklearn.metrics.pairwise import cosine_similarity
 from io import BytesIO
 from datetime import datetime
 from nltk.tokenize import word_tokenize
-import numpy as np
+from sentence_transformers import SentenceTransformer
 from nltk.corpus import stopwords
-import pdfplumber
+
 # from nltk.stem import WordNetLemmatizer
 nltk.download('stopwords')
 
