@@ -149,8 +149,8 @@ def ask_llm_with_history(question, context, history, api_key):
 
     messages = [{"role": "system", "content": 
         "You are a friendly AI assistant who gives casual and helpful laptop advice. "
-        "ONLY use the internal knowledge you gain from the info below — but NEVER mention, refer to, or hint at it in your answers. "
-        "Respond in a clear, structured format using numbered bullet points for lists. Each item should start on a new line. "
+        "ONLY use the internal knowledge you gain from the info belows. "
+        "Respond in a clear, structured format using numbered bullet points for lists, table for comparision. Each item should start on a new line. "
         "Avoid formal tones or sign-offs. Be friendly, clear, and conversational.\n\n"
         f"[INFO SOURCE]\n{context}"}]
 
@@ -366,12 +366,10 @@ if hf_token and uploaded_files:
                     relevant_chunk_indices = search_faiss(query_embedding, faiss_index)
                     relevant_chunks = [pdf_chunks[i] for i in relevant_chunk_indices]
                     context = "\n".join(relevant_chunks)
-                    # context = find_relevant_chunk(question, pdf_chunks)
                     ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
 
         st.session_state.history.append({"user": question, "assistant": ai_reply})
         st.rerun()
-
 
     #save chat to pdf
     with st.sidebar:
