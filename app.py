@@ -333,9 +333,9 @@ if "history" not in st.session_state:
 
 if hf_token and uploaded_files:
     with st.spinner("🔍 Extracting and processing your documents..."):
-        file_bytes = uploaded_file.read()
         all_text = ""
         for uploaded_file in uploaded_files:
+            file_bytes = uploaded_file.read()
             document_text = extract_text_from_pdf(file_bytes)
             all_text += document_text + "\n\n"  # Combine the text from all PDFs
         pdf_text = document_text
