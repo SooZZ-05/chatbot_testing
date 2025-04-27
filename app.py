@@ -90,9 +90,9 @@ def is_farewell(user_input):
 
 stop_words = set(stopwords.words('english'))
 
-def extract_text_from_pdf(uploaded_file):
+def extract_text_from_pdf(file_bytes):
     text = ""
-    with fitz.open(stream=uploaded_file.read(), filetype="pdf") as doc:
+    with fitz.open(stream=file_bytes, filetype="pdf") as doc:
         for page in doc:
             text += page.get_text()
 
@@ -333,11 +333,12 @@ if "history" not in st.session_state:
 
 if hf_token and uploaded_files:
     with st.spinner("🔍 Extracting and processing your documents..."):
+        file_bytes = uploaded_file.read()
         all_text = ""
         for uploaded_file in uploaded_files:
-            document_text = extract_text_from_pdf(uploaded_file)
+            document_text = extract_text_from_pdf(file_bytes)
             all_text += document_text + "\n\n"  # Combine the text from all PDFs
-        pdf_text = extract_text_from_pdf(uploaded_file)
+        pdf_text = document_text
         pdf_chunks = chunk_text(all_text)
         keywords = extract_keywords_tfidf(all_text, top_n=30)
         chunk_embeddings = get_embeddings(pdf_chunks)
