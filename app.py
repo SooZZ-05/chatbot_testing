@@ -337,8 +337,9 @@ if hf_token and uploaded_files:
         for uploaded_file in uploaded_files:
             document_text = extract_text_from_pdf(uploaded_file)
             all_text += document_text + "\n\n"  # Combine the text from all PDFs
+        pdf_text = extract_text_from_pdf(uploaded_file)
         pdf_chunks = chunk_text(all_text)
-        # keywords = extract_keywords_tfidf(all_text, top_n=30)
+        keywords = extract_keywords_tfidf(all_text, top_n=30)
         chunk_embeddings = get_embeddings(pdf_chunks)
         
         # Create FAISS index
