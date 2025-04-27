@@ -96,7 +96,7 @@ def extract_text_from_pdf(file_bytes):
         for page in doc:
             text += page.get_text()
 
-    return ' '.join(filtered_words)
+    return text
 
 def chunk_text(text, chunk_size=3000, overlap=500):
     chunks = []
