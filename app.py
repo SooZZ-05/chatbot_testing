@@ -25,6 +25,9 @@ from nltk.corpus import stopwords
 # from nltk.stem import WordNetLemmatizer
 nltk.download('stopwords')
 
+# Embedding model
+embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+
 # ===== Load API Key =====
 load_dotenv()
 hf_token = os.getenv("OPENROUTER_API_KEY", st.secrets.get("OPENROUTER_API_KEY"))
@@ -128,6 +131,21 @@ def find_relevant_chunk(question, chunks):
     best_index = similarities.argmax()
     return chunks[best_index]
 
+def get_embeddings(text_list):
+    return embedding_model.encode(text_list)
+
+# Create FAISS index for chunk embeddings
+def create_faiss_index(embeddings):
+    embedding_array = np.array(embeddings).astype('float32')
+    index = faiss.IndexFlatL2(embedding_array.shape[1])
+    index.add(embedding_array)
+    return index
+
+# Search relevant chunks
+def search_faiss(query_embedding, index, k=5):
+    distances, indices = index.search(np.array([query_embedding]), k)
+    return indices[0]
+
 # ===== LLM Logic =====
 def ask_llm_with_history(question, context, history, api_key):
     url = "https://openrouter.ai/api/v1/chat/completions"
@@ -227,9 +245,6 @@ def truncate_text(text, limit=1500):
     # Otherwise, truncate the text and append "..." to indicate more content
     return text[:limit] + "..."
 
-
-
-
 # ===== Chat Saving Button =====
 def estimate_multicell_height(pdf, text, width, line_height):
     lines = pdf.multi_cell(width, line_height, text, split_only=True)
@@ -323,8 +338,11 @@ if hf_token and uploaded_files:
             document_text = extract_text_from_pdf(uploaded_file)
             all_text += document_text + "\n\n"  # Combine the text from all PDFs
         pdf_chunks = chunk_text(all_text)
-        keywords = extract_keywords_tfidf(all_text, top_n=30)
-
+        # keywords = extract_keywords_tfidf(all_text, top_n=30)
+        chunk_embeddings = get_embeddings(pdf_chunks)
+        
+        # Create FAISS index
+        faiss_index = create_faiss_index(chunk_embeddings)
  
     st.subheader("🧠 Chat with your PDF")
     for entry in st.session_state.history:
@@ -351,7 +369,11 @@ if hf_token and uploaded_files:
                 ai_reply = "❓ Sorry, I can only help with questions related to the laptop specifications you uploaded."
             else:
                 with st.spinner("🤔 Thinking..."):
-                    context = find_relevant_chunk(question, pdf_chunks)
+                    query_embedding = get_embeddings([question])[0]
+                    relevant_chunk_indices = search_faiss(query_embedding, faiss_index)
+                    relevant_chunks = [pdf_chunks[i] for i in relevant_chunk_indices]
+                    context = "\n".join(relevant_chunks)
+                    # context = find_relevant_chunk(question, pdf_chunks)
                     ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
 
         st.session_state.history.append({"user": question, "assistant": ai_reply})
