@@ -147,11 +147,13 @@ def ask_llm_with_history(question, context, history, api_key):
         "Content-Type": "application/json"
     }
 
+    context = truncate_text(context, limit=1000)
+
     messages = [{"role": "system", "content": 
         "You are a friendly AI assistant that answers **briefly and directly**. "
-        "Study all the laptop information and ONLY use the internal knowledge you gain from the info belows. "
+        "Answer user questions based ONLY on the info below. "
         "Give **concise** answers, not more than **3 short sentences**."
-        "If a list is needed, limit to **3 points maximum**, if comparison is mentioned, provide a simple table"
+        "Use maximum 3 short sentences or a simple table if needed."
         "Avoid unnecessary explanations, greetings, or sign-offs.\n\n"
         f"[INFO SOURCE]\n{context}"}]
 
@@ -364,7 +366,7 @@ if hf_token and uploaded_files:
             else:
                 with st.spinner("🤔 Thinking..."):
                     query_embedding = get_embeddings([question])[0]
-                    relevant_chunk_indices = search_faiss(query_embedding, faiss_index)
+                    relevant_chunk_indices = search_faiss(query_embedding, faiss_index, k=3)
                     relevant_chunks = [pdf_chunks[i] for i in relevant_chunk_indices]
                     context = "\n".join(relevant_chunks)
                     ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
