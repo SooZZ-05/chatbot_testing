@@ -105,6 +105,7 @@ def is_follow_up_question(question):
     
     # Compute cosine similarity between the question and each follow-up phrase
     similarities = cosine_similarity(question_embedding, phrases_embeddings)
+    print(f"Similarities for '{question}': {similarities}")
     
     # Check if the maximum similarity is above a threshold
     if np.max(similarities) > 0.75:
