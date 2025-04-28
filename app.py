@@ -230,7 +230,7 @@ def is_relevant_question(question, pdf_chunks,keywords):
     question_embedding = embedding_model.encode([question])[0]
     relevant_chunk_indices = search_faiss(question_embedding, faiss_index, k=3)
 
-    if relevant_chunk_indices:
+    if relevant_chunk_indices.size > 0:
         return True
     
     return False
