@@ -413,7 +413,7 @@ if hf_token and uploaded_files:
             if not is_relevant_question(question, pdf_chunks, keywords):
                 ai_reply = "❓ Sorry, I can only help with questions related to the laptop specifications you uploaded."
             elif is_follow_up_question(question):
-                ai_reply = handle_follow_up_question(question, st.session_state.history, pdf_chunks)
+                ai_reply = handle_follow_up_question(question, st.session_state.history, pdf_chunks, embedding_model, faiss_index)
             else:
                 with st.spinner("🤔 Thinking..."):
                     query_embedding = get_embeddings([question])[0]
