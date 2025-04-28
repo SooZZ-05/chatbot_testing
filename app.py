@@ -88,6 +88,46 @@ def is_farewell(user_input):
     close = get_close_matches(user_input, farewells, cutoff=0.6)
     return bool(close)
 
+def is_follow_up_question(question):
+    # Define possible follow-up indicators
+    follow_up_phrases = [
+        "any more",
+        "what else",
+        "another example",
+        "can you show more",
+        "give me more",
+        "anything else"
+    ]
+    
+    # Convert the user's question and follow-up phrases to embeddings
+    question_embedding = embedding_model.encode([question.lower()])
+    phrases_embeddings = embedding_model.encode(follow_up_phrases)
+    
+    # Compute cosine similarity between the question and each follow-up phrase
+    similarities = cosine_similarity(question_embedding, phrases_embeddings)
+    
+    # Check if the maximum similarity is above a threshold
+    if np.max(similarities) > 0.75:
+        return True
+    
+    return False
+
+def handle_follow_up_question(question, history, pdf_chunks):
+    # Check if the last user query was related to examples or more information
+    last_user_query = history[-1]["user"] if history else ""
+
+    # If the last question was about laptop examples or information
+    if "example" in last_user_query.lower() or "more" in last_user_query.lower():
+        # Find additional relevant chunks or examples
+        additional_info = get_additional_laptop_info(pdf_chunks)
+        return additional_info
+    else:
+        return "❓ Could you clarify your request? I need more context to provide additional information."
+
+def get_additional_laptop_info(pdf_chunks):
+    relevant_chunks = pdf_chunks[:3] 
+    return "\n".join(relevant_chunks)
+
 stop_words = set(stopwords.words('english'))
 
 def extract_text_from_pdf(file_bytes):
@@ -363,6 +403,8 @@ if hf_token and uploaded_files:
         else:
             if not is_relevant_question(question, pdf_chunks, keywords):
                 ai_reply = "❓ Sorry, I can only help with questions related to the laptop specifications you uploaded."
+            elif is_follow_up_question(question):
+                ai_reply = handle_follow_up_question(question, st.session_state.history, pdf_chunks)
             else:
                 with st.spinner("🤔 Thinking..."):
                     query_embedding = get_embeddings([question])[0]
