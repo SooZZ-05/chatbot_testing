@@ -88,7 +88,7 @@ def is_farewell(user_input):
     close = get_close_matches(user_input, farewells, cutoff=0.6)
     return bool(close)
 
-def is_follow_up_question(question):
+def is_follow_up_question(question, history, embedding_model, faiss_index, pdf_chunks):
     # Define possible follow-up indicators
     follow_up_phrases = [
         "any more",
