@@ -219,17 +219,21 @@ def ask_llm_with_history(question, context, history, api_key):
     else:
         return f"❌ Error {response.status_code}: {response.text}"
 
-def is_relevant_question(question, pdf_chunks,keywords):
-    # Here we check for the presence of any relevant keywords from the uploaded PDFs
-    question = question.lower()
+def is_relevant_question(question, pdf_chunks, keywords, faiss_index):
+    # Combine keywords from the uploaded PDF and additional keywords
     additional_keywords = ["study", "business", "gaming", "laptop", "processor", "ram", "ssd", "battery", "weight", "price", "graphics", "display", "screen", "documents", "pdf", "similarities", "differences", "compare", "summary", "count"]
-    relevant_keywords = keywords + additional_keywords
+    relevant_keywords = keywords + additional_keywords  # Combine PDF and additional keywords
+    
+    # Check if any relevant keyword is in the question
+    question = question.lower()
     if any(keyword in question for keyword in relevant_keywords):
         return True
 
+    # If no relevant keyword, use FAISS to find semantically relevant content in chunks
     question_embedding = embedding_model.encode([question])[0]
     relevant_chunk_indices = search_faiss(question_embedding, faiss_index, k=3)
 
+    # Check if relevant chunks are found
     if relevant_chunk_indices.size > 0:
         return True
     
