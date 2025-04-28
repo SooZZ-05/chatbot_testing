@@ -113,17 +113,18 @@ def is_follow_up_question(question):
     
     return False
 
-def handle_follow_up_question(question, history, pdf_chunks):
-    # Check if the last user query was related to examples or more information
-    last_user_query = history[-1]["user"] if history else ""
-
-    # If the last question was about laptop examples or information
-    if "example" in last_user_query.lower() or "more" in last_user_query.lower():
-        # Find additional relevant chunks or examples
-        additional_info = get_additional_laptop_info(pdf_chunks)
+def handle_follow_up_question(question, history, pdf_chunks, embedding_model, faiss_index):
+    # Handle follow-up questions by providing more examples or details
+    if is_follow_up_question(question, history, embedding_model, faiss_index, pdf_chunks):
+        # Retrieve additional relevant chunks from the PDF
+        query_embedding = embedding_model.encode([question])[0]
+        relevant_chunk_indices = search_faiss(query_embedding, faiss_index, k=5)
+        relevant_chunks = [pdf_chunks[i] for i in relevant_chunk_indices]
+        additional_info = "\n".join(relevant_chunks)
         return additional_info
-    else:
-        return "❓ Could you clarify your request? I need more context to provide additional information."
+
+    # If no follow-up detected, ask for clarification
+    return "❓ Could you clarify your request? I need more context to provide additional information."
 
 def get_additional_laptop_info(pdf_chunks):
     relevant_chunks = pdf_chunks[:3] 
@@ -139,11 +140,15 @@ def extract_text_from_pdf(file_bytes):
 
     return text
 
-def chunk_text(text, chunk_size=3000, overlap=500):
-    chunks = []
-    for i in range(0, len(text), chunk_size - overlap):
-        chunks.append(text[i:i+chunk_size])
-    return chunks
+# def chunk_text(text, chunk_size=3000, overlap=500):
+#     chunks = []
+#     for i in range(0, len(text), chunk_size - overlap):
+#         chunks.append(text[i:i+chunk_size])
+#     return chunks
+
+def chunk_text_by_paragraph(text):
+    paragraphs = text.split("\n\n")  # Split the text into paragraphs
+    return [p for p in paragraphs if len(p.strip()) > 0]  # Return non-empty paragraphs
 
 def extract_keywords_tfidf(text, top_n=100):
     vectorizer = TfidfVectorizer(stop_words='english', max_features=1000)
@@ -157,13 +162,10 @@ def extract_keywords_tfidf(text, top_n=100):
     return top_keywords.tolist()
 
 def find_relevant_chunk(question, chunks):
-    documents = chunks + [question]
-    vectorizer = TfidfVectorizer().fit(documents)
-    chunk_vectors = vectorizer.transform(chunks)
-    question_vector = vectorizer.transform([question])
-    similarities = cosine_similarity(question_vector, chunk_vectors).flatten()
-    best_index = similarities.argmax()
-    return chunks[best_index]
+    query_embedding = embedding_model.encode([question])[0]
+    relevant_indices = search_faiss(query_embedding, faiss_index, k)
+    relevant_chunks = [chunks[i] for i in relevant_indices]
+    return relevant_chunks
 
 def get_embeddings(text_list):
     return embedding_model.encode(text_list)
@@ -221,10 +223,16 @@ def is_relevant_question(question, pdf_chunks,keywords):
     # Here we check for the presence of any relevant keywords from the uploaded PDFs
     question = question.lower()
     additional_keywords = ["study", "business", "gaming", "laptop", "processor", "ram", "ssd", "battery", "weight", "price", "graphics", "display", "screen", "documents", "pdf", "similarities", "differences", "compare", "summary", "count"]
-    relevant_keywords = keywords + additional_keywords
-
+    
     if any(keyword in question for keyword in relevant_keywords):
         return True
+
+    question_embedding = embedding_model.encode([question])[0]
+    relevant_chunk_indices = search_faiss(question_embedding, faiss_index, k=3)
+
+    if relevant_chunk_indices:
+        return True
+    
     return False
 
 
@@ -374,7 +382,7 @@ if hf_token and uploaded_files:
             document_text = extract_text_from_pdf(file_bytes)
             all_text += document_text + "\n\n"  # Combine the text from all PDFs
         pdf_text = document_text
-        pdf_chunks = chunk_text(all_text)
+        pdf_chunks = chunk_text_by_paragraph(all_text)
         keywords = extract_keywords_tfidf(all_text, top_n=30)
         chunk_embeddings = get_embeddings(pdf_chunks)
         
