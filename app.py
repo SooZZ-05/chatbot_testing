@@ -410,9 +410,9 @@ if hf_token and uploaded_files:
         elif is_farewell(question):
             ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
         else:
-            if not is_relevant_question(question, pdf_chunks, keywords):
+            if not is_relevant_question(question, pdf_chunks, keywords, faiss_index):
                 ai_reply = "❓ Sorry, I can only help with questions related to the laptop specifications you uploaded."
-            elif is_follow_up_question(question):
+            elif is_follow_up_question(question, st.session_state.history, embedding_model, faiss_index, pdf_chunks):
                 ai_reply = handle_follow_up_question(question, st.session_state.history, pdf_chunks, embedding_model, faiss_index)
             else:
                 with st.spinner("🤔 Thinking..."):
