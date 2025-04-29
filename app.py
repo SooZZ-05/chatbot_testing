@@ -330,7 +330,7 @@ uploaded_files = st.file_uploader("📄 Upload Laptop Specification PDFs", type=
 if "history" not in st.session_state:
     st.session_state.history = []
 
-if hf_token and uploaded_files:
+if openai_api_key and uploaded_files:
     with st.spinner("🔍 Extracting and processing your documents..."):
         all_text = ""
         for uploaded_file in uploaded_files:
@@ -376,7 +376,7 @@ if hf_token and uploaded_files:
                     relevant_chunk_indices = search_faiss(query_embedding, faiss_index, k=3)
                     relevant_chunks = [pdf_chunks[i] for i in relevant_chunk_indices]
                     context = "\n".join(relevant_chunks)
-                    ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
+                    ai_reply = ask_llm_with_history(question, context, st.session_state.history, openai_api_key)
 
         st.session_state.history.append({"user": question, "assistant": ai_reply})
         st.rerun()
@@ -396,7 +396,7 @@ if hf_token and uploaded_files:
         else:
             st.info("No conversation to download yet!")
 
-elif not hf_token:
+elif not openai_api_key:
     st.error("🔐 API key not found.")
 elif not uploaded_files:
     st.info("Please upload a PDF with laptop specifications.")
