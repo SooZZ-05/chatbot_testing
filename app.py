@@ -26,7 +26,9 @@ from nltk.corpus import stopwords
 nltk.download('stopwords')
 
 # Embedding model
-embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+# embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+embedding_model = SentenceTransformer('sentence-transformers/distilbert-base-uncased')
+
 
 # ===== Load API Key =====
 load_dotenv()
@@ -140,12 +142,6 @@ def extract_text_from_pdf(file_bytes):
 
     return text
 
-# def chunk_text(text, chunk_size=3000, overlap=500):
-#     chunks = []
-#     for i in range(0, len(text), chunk_size - overlap):
-#         chunks.append(text[i:i+chunk_size])
-#     return chunks
-
 def chunk_text_by_paragraph(text):
     paragraphs = text.split("\n\n")  # Split the text into paragraphs
     return [p for p in paragraphs if len(p.strip()) > 0]  # Return non-empty paragraphs
@@ -181,6 +177,25 @@ def create_faiss_index(embeddings):
 def search_faiss(query_embedding, index, k=5):
     distances, indices = index.search(np.array([query_embedding]), k)
     return indices[0]
+
+def is_vague_query(query):
+    vague_keywords = ["best", "recommend", "top", "which", "laptop", "suggest"]
+    specific_keywords = ["gaming", "business", "study", "editing", "multimedia", "creative", "work", "price", "budget"]
+
+    # Check if query contains vague keywords but lacks specific ones
+    query_lower = query.lower()
+    if any(vague in query_lower for vague in vague_keywords) and not any(specific in query_lower for specific in specific_keywords):
+        return True
+    return False
+
+def handle_vague_query(query):
+    if is_vague_query(query):
+        return (
+            "🤔 Could you clarify a bit? What type of tasks do you plan to use your laptop for? "
+            "Is it for gaming, business, creative work, or something else? Also, do you have a budget range?"
+        )
+    return None
+
 
 # ===== LLM Logic =====
 def ask_llm_with_history(question, context, history, api_key):
@@ -413,18 +428,23 @@ if hf_token and uploaded_files:
                 ai_reply += "\n\n" + category_suggestion
         elif is_farewell(question):
             ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
+
         else:
-            if not is_relevant_question(question, pdf_chunks, keywords, faiss_index):
-                ai_reply = "❓ Sorry, I can only help with questions related to the laptop specifications you uploaded."
-            elif is_follow_up_question(question, st.session_state.history, embedding_model, faiss_index, pdf_chunks):
-                ai_reply = handle_follow_up_question(question, st.session_state.history, pdf_chunks, embedding_model, faiss_index)
+            clarification = handle_vague_query(question)
+            if clarification:
+                ai_reply = clarification
             else:
-                with st.spinner("🤔 Thinking..."):
-                    query_embedding = get_embeddings([question])[0]
-                    relevant_chunk_indices = search_faiss(query_embedding, faiss_index, k=3)
-                    relevant_chunks = [pdf_chunks[i] for i in relevant_chunk_indices]
-                    context = "\n".join(relevant_chunks)
-                    ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
+                if not is_relevant_question(question, pdf_chunks, keywords, faiss_index):
+                    ai_reply = "❓ Sorry, I can only help with questions related to the laptop specifications you uploaded."
+                elif is_follow_up_question(question, st.session_state.history, embedding_model, faiss_index, pdf_chunks):
+                    ai_reply = handle_follow_up_question(question, st.session_state.history, pdf_chunks, embedding_model, faiss_index)
+                else:
+                    with st.spinner("🤔 Thinking..."):
+                        query_embedding = get_embeddings([question])[0]
+                        relevant_chunk_indices = search_faiss(query_embedding, faiss_index, k=3)
+                        relevant_chunks = [pdf_chunks[i] for i in relevant_chunk_indices]
+                        context = "\n".join(relevant_chunks)
+                        ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
 
         st.session_state.history.append({"user": question, "assistant": ai_reply})
         st.rerun()
