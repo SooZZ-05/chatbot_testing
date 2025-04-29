@@ -134,6 +134,29 @@ def extract_text_from_pdf(file_bytes):
 
     return text
 
+def chunk_text_by_paragraph(text, chunk_size=3000, overlap=500):
+    paragraphs = text.split("\n\n")  # Split the text into paragraphs
+    chunks = []
+    current_chunk = ""
+    
+    for paragraph in paragraphs:
+        if len(current_chunk) + len(paragraph) > chunk_size:
+            chunks.append(current_chunk)  # Add the current chunk to the list
+            current_chunk = paragraph  # Start a new chunk
+        else:
+            current_chunk += "\n\n" + paragraph  # Add the paragraph to the current chunk
+    
+    # Add the last chunk if it's non-empty
+    if current_chunk:
+        chunks.append(current_chunk)
+    
+    # Handle overlap by combining the last `overlap` characters from the previous chunk with the next
+    if overlap > 0:
+        for i in range(1, len(chunks)):
+            chunks[i] = chunks[i-1][-overlap:] + chunks[i]
+    
+    return chunks
+
 # Replace this function to use OpenAI API
 def ask_llm_with_history(question, context, history, api_key):
     url = "https://api.openai.com/v1/chat/completions"
