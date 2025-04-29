@@ -3,17 +3,24 @@ import nltk
 import streamlit as st
 from dotenv import load_dotenv
 import fitz
+import re
+import requests
 import random
+import pytz
+import string
 import numpy as np
+import pdfplumber
 import faiss
 from fpdf import FPDF
 from nltk.stem import WordNetLemmatizer
+from difflib import get_close_matches
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from io import BytesIO
 from datetime import datetime
-from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
 from sentence_transformers import SentenceTransformer
+from nltk.corpus import stopwords
 
 # from nltk.stem import WordNetLemmatizer
 nltk.download('stopwords')
@@ -133,6 +140,12 @@ def extract_text_from_pdf(file_bytes):
 
     return text
 
+# def chunk_text(text, chunk_size=3000, overlap=500):
+#     chunks = []
+#     for i in range(0, len(text), chunk_size - overlap):
+#         chunks.append(text[i:i+chunk_size])
+#     return chunks
+
 def chunk_text_by_paragraph(text):
     paragraphs = text.split("\n\n")  # Split the text into paragraphs
     return [p for p in paragraphs if len(p.strip()) > 0]  # Return non-empty paragraphs
@@ -205,6 +218,27 @@ def ask_llm_with_history(question, context, history, api_key):
         return format_response(response.json()["choices"][0]["message"]["content"])
     else:
         return f"❌ Error {response.status_code}: {response.text}"
+
+def is_relevant_question(question, pdf_chunks, keywords, faiss_index):
+    # Combine keywords from the uploaded PDF and additional keywords
+    additional_keywords = ["study", "business", "gaming", "laptop", "processor", "ram", "ssd", "battery", "weight", "price", "graphics", "display", "screen", "documents", "pdf", "similarities", "differences", "compare", "summary", "count"]
+    relevant_keywords = keywords + additional_keywords  # Combine PDF and additional keywords
+    
+    # Check if any relevant keyword is in the question
+    question = question.lower()
+    if any(keyword in question for keyword in relevant_keywords):
+        return True
+
+    # If no relevant keyword, use FAISS to find semantically relevant content in chunks
+    question_embedding = embedding_model.encode([question])[0]
+    relevant_chunk_indices = search_faiss(question_embedding, faiss_index, k=3)
+
+    # Check if relevant chunks are found
+    if relevant_chunk_indices.size > 0:
+        return True
+    
+    return False
+
 
 # ===== Emoji Formatting =====
 def format_response(text):
