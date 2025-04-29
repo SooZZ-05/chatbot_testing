@@ -449,14 +449,14 @@ if hf_token and uploaded_files:
 
     if question:
         with st.spinner("🤔 Thinking..."):
-                        query_embedding = get_embeddings([question])[0]
-                        relevant_chunk_indices = search_faiss(query_embedding, faiss_index, k=3)
-                        relevant_chunks = [pdf_chunks[i] for i in relevant_chunk_indices]
-                        context = "\n".join(relevant_chunks)
-                        ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
+            query_embedding = get_embeddings([question])[0]
+            relevant_chunk_indices = search_faiss(query_embedding, faiss_index, k=3)
+            relevant_chunks = [pdf_chunks[i] for i in relevant_chunk_indices]
+            context = "\n".join(relevant_chunks)
+            ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
 
-    st.session_state.history.append({"user": question, "assistant": ai_reply})
-    st.rerun()
+        st.session_state.history.append({"user": question, "assistant": ai_reply})
+        st.rerun()
 
     #save chat to pdf
     with st.sidebar:
