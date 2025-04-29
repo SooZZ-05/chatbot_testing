@@ -11,8 +11,6 @@ import string
 import numpy as np
 import pdfplumber
 import faiss
-import spacy
-from spacy.matcher import PhraseMatcher
 from fpdf import FPDF
 from nltk.stem import WordNetLemmatizer
 from difflib import get_close_matches
@@ -26,9 +24,7 @@ from nltk.corpus import stopwords
 
 # from nltk.stem import WordNetLemmatizer
 nltk.download('stopwords')
-nlp = spacy.load("en_core_web_sm")
 
-known_brands = ["asus", "acer", "lenovo", "dell", "hp", "apple", "msi", "samsung", "huawei", "alienware", "razer", "microsoft"]
 # Embedding model
 embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
 
@@ -144,6 +140,12 @@ def extract_text_from_pdf(file_bytes):
 
     return text
 
+# def chunk_text(text, chunk_size=3000, overlap=500):
+#     chunks = []
+#     for i in range(0, len(text), chunk_size - overlap):
+#         chunks.append(text[i:i+chunk_size])
+#     return chunks
+
 def chunk_text_by_paragraph(text):
     paragraphs = text.split("\n\n")  # Split the text into paragraphs
     return [p for p in paragraphs if len(p.strip()) > 0]  # Return non-empty paragraphs
@@ -179,46 +181,6 @@ def create_faiss_index(embeddings):
 def search_faiss(query_embedding, index, k=5):
     distances, indices = index.search(np.array([query_embedding]), k)
     return indices[0]
-
-def is_vague_query(query):
-    vague_keywords = ["best", "recommend", "top", "which", "laptop", "suggest"]
-    specific_keywords = ["gaming", "business", "study", "editing", "multimedia", "creative", "work", "price", "budget"]
-
-    # Check if query contains vague keywords but lacks specific ones
-    query_lower = query.lower()
-    if any(vague in query_lower for vague in vague_keywords) and not any(specific in query_lower for specific in specific_keywords):
-        return True
-    return False
-
-def handle_vague_query(query):
-    if is_vague_query(query):
-        return (
-            "🤔 Could you clarify a bit? What type of tasks do you plan to use your laptop for? "
-            "Is it for gaming, business, creative work, or something else? Also, do you have a budget range?"
-        )
-    return None
-
-def extract_brands_from_text(text):
-    # Process the text with spaCy to get the named entities
-    doc = nlp(text)
-    
-    # Extract named entities that are likely to be brands (proper nouns)
-    entities = [ent.text.lower() for ent in doc.ents if ent.label_ == "ORG"]  # "ORG" stands for organizations (brand names often fall into this category)
-    
-    # Remove duplicates and filter only those entities which are in the known_brands list
-    extracted_brands = set([brand for brand in entities if brand in known_brands])
-    return extracted_brands
-
-def filter_chunks_by_brands(chunks, detected_brands):
-    brand_chunks = {brand: [] for brand in detected_brands}
-    
-    # Loop through each chunk and filter based on detected brands
-    for chunk in chunks:
-        for brand in detected_brands:
-            if brand in chunk.lower():
-                brand_chunks[brand].append(chunk)
-    
-    return brand_chunks
 
 # ===== LLM Logic =====
 def ask_llm_with_history(question, context, history, api_key):
@@ -444,67 +406,28 @@ if hf_token and uploaded_files:
 
     question = st.chat_input("💬 Your message")
 
-    # if question:
-    #     if is_greeting_or_smalltalk(question):
-    #         ai_reply = get_random_greeting()
-    #         if "recommendation" not in ai_reply.lower() and "suggestion" not in ai_reply.lower():
-    #             ai_reply += "\n\n" + category_suggestion
-    #     elif is_farewell(question):
-    #         ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
-
-    #     else:
-    #         clarification = handle_vague_query(question)
-    #         if clarification:
-    #             ai_reply = clarification
-    #         else:
-    #             if not is_relevant_question(question, pdf_chunks, keywords, faiss_index):
-    #                 ai_reply = "❓ Sorry, I can only help with questions related to the laptop specifications you uploaded."
-    #             elif is_follow_up_question(question, st.session_state.history, embedding_model, faiss_index, pdf_chunks):
-    #                 ai_reply = handle_follow_up_question(question, st.session_state.history, pdf_chunks, embedding_model, faiss_index)
-    #             else:
-    #                 with st.spinner("🤔 Thinking..."):
-    #                     query_embedding = get_embeddings([question])[0]
-    #                     relevant_chunk_indices = search_faiss(query_embedding, faiss_index, k=3)
-    #                     relevant_chunks = [pdf_chunks[i] for i in relevant_chunk_indices]
-    #                     context = "\n".join(relevant_chunks)
-    #                     ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
-
-    #     st.session_state.history.append({"user": question, "assistant": ai_reply})
-    #     st.rerun()
-
-if question:
-    with st.spinner("🤔 Thinking..."):
-        # Generate embeddings for the user's question
-        query_embedding = get_embeddings([question])[0]
-        
-        # Use FAISS to get the most relevant document chunks based on the user's question
-        relevant_chunk_indices = search_faiss(query_embedding, faiss_index, k=3)
-        relevant_chunks = [pdf_chunks[i] for i in relevant_chunk_indices]
-        
-        # Extract possible brands dynamically using spaCy
-        all_extracted_brands = set()
-        for chunk in relevant_chunks:
-            extracted_brands = extract_brands_from_text(chunk)
-            all_extracted_brands.update(extracted_brands)
-        
-        # If brands were extracted, filter the chunks accordingly
-        if all_extracted_brands:
-            filtered_chunks = filter_chunks_by_brands(relevant_chunks, all_extracted_brands)
-            
-            # Generate response based on the filtered chunks
-            response = ""
-            for brand, chunks in filtered_chunks.items():
-                if chunks:  # If there are relevant chunks for the brand
-                    response += f"**{brand.capitalize()} Laptops:**\n" + "\n".join(chunks) + "\n\n"
-            
-            if not response:
-                response = "❓ I couldn't find any laptops in the document that match your query."
+    if question:
+        if is_greeting_or_smalltalk(question):
+            ai_reply = get_random_greeting()
+            if "recommendation" not in ai_reply.lower() and "suggestion" not in ai_reply.lower():
+                ai_reply += "\n\n" + category_suggestion
+        elif is_farewell(question):
+            ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
         else:
-            response = "❓ I couldn't detect any laptop brands in the document."
-        
-    # Append the user's question and assistant's response to the session history
-    st.session_state.history.append({"user": question, "assistant": response})
-    st.rerun()
+            if not is_relevant_question(question, pdf_chunks, keywords, faiss_index):
+                ai_reply = "❓ Sorry, I can only help with questions related to the laptop specifications you uploaded."
+            elif is_follow_up_question(question, st.session_state.history, embedding_model, faiss_index, pdf_chunks):
+                ai_reply = handle_follow_up_question(question, st.session_state.history, pdf_chunks, embedding_model, faiss_index)
+            else:
+                with st.spinner("🤔 Thinking..."):
+                    query_embedding = get_embeddings([question])[0]
+                    relevant_chunk_indices = search_faiss(query_embedding, faiss_index, k=3)
+                    relevant_chunks = [pdf_chunks[i] for i in relevant_chunk_indices]
+                    context = "\n".join(relevant_chunks)
+                    ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
+
+        st.session_state.history.append({"user": question, "assistant": ai_reply})
+        st.rerun()
 
     #save chat to pdf
     with st.sidebar:
