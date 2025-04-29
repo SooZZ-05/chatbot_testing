@@ -10,6 +10,3 @@ pdfplumber
 openai
 sentence-transformers
 faiss-cpu
-spacy
-pandas
-en-core-web-sm
