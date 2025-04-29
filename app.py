@@ -26,9 +26,7 @@ from nltk.corpus import stopwords
 nltk.download('stopwords')
 
 # Embedding model
-# embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-embedding_model = SentenceTransformer('sentence-transformers/distilbert-base-uncased')
-
+embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
 
 # ===== Load API Key =====
 load_dotenv()
