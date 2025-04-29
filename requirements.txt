@@ -10,3 +10,5 @@ pdfplumber
 openai
 sentence-transformers
 faiss-cpu
+spacy
+pandas
