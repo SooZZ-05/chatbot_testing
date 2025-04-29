@@ -30,7 +30,7 @@ embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
 
 # ===== Load API Key =====
 load_dotenv()
-hf_token = os.getenv("OPENROUTER_API_KEY", st.secrets.get("OPENROUTER_API_KEY"))
+openai_api_key = os.getenv("OPENAI_API_KEY", st.secrets.get("OPENAI_API_KEY"))
 
 # ===== NLTK Resource Setup =====
 try:
@@ -126,12 +126,6 @@ def handle_follow_up_question(question, history, pdf_chunks, embedding_model, fa
     # If no follow-up detected, ask for clarification
     return "❓ Could you clarify your request? I need more context to provide additional information."
 
-def get_additional_laptop_info(pdf_chunks):
-    relevant_chunks = pdf_chunks[:3] 
-    return "\n".join(relevant_chunks)
-
-stop_words = set(stopwords.words('english'))
-
 def extract_text_from_pdf(file_bytes):
     text = ""
     with fitz.open(stream=file_bytes, filetype="pdf") as doc:
@@ -140,51 +134,9 @@ def extract_text_from_pdf(file_bytes):
 
     return text
 
-# def chunk_text(text, chunk_size=3000, overlap=500):
-#     chunks = []
-#     for i in range(0, len(text), chunk_size - overlap):
-#         chunks.append(text[i:i+chunk_size])
-#     return chunks
-
-def chunk_text_by_paragraph(text):
-    paragraphs = text.split("\n\n")  # Split the text into paragraphs
-    return [p for p in paragraphs if len(p.strip()) > 0]  # Return non-empty paragraphs
-
-def extract_keywords_tfidf(text, top_n=100):
-    vectorizer = TfidfVectorizer(stop_words='english', max_features=1000)
-    tfidf_matrix = vectorizer.fit_transform([text])
-    scores = tfidf_matrix.toarray().flatten()
-    keywords = np.array(vectorizer.get_feature_names_out())
-    
-    top_indices = scores.argsort()[-top_n:][::-1]
-    top_keywords = keywords[top_indices]
-    
-    return top_keywords.tolist()
-
-def find_relevant_chunk(question, chunks):
-    query_embedding = embedding_model.encode([question])[0]
-    relevant_indices = search_faiss(query_embedding, faiss_index, k)
-    relevant_chunks = [chunks[i] for i in relevant_indices]
-    return relevant_chunks
-
-def get_embeddings(text_list):
-    return embedding_model.encode(text_list)
-
-# Create FAISS index for chunk embeddings
-def create_faiss_index(embeddings):
-    embedding_array = np.array(embeddings).astype('float32')
-    index = faiss.IndexFlatL2(embedding_array.shape[1])
-    index.add(embedding_array)
-    return index
-
-# Search relevant chunks
-def search_faiss(query_embedding, index, k=5):
-    distances, indices = index.search(np.array([query_embedding]), k)
-    return indices[0]
-
-# ===== LLM Logic =====
+# Replace this function to use OpenAI API
 def ask_llm_with_history(question, context, history, api_key):
-    url = "https://openrouter.ai/api/v1/chat/completions"
+    url = "https://api.openai.com/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
@@ -207,7 +159,7 @@ def ask_llm_with_history(question, context, history, api_key):
     messages.append({"role": "user", "content": question})
 
     payload = {
-        "model": "mistralai/mistral-7b-instruct:free",
+        "model": "gpt-4",  # You can use any OpenAI model here, e.g., gpt-3.5-turbo or gpt-4
         "messages": messages,
         "temperature": 0.2,
         "top_p": 0.9,
