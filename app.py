@@ -419,33 +419,44 @@ if hf_token and uploaded_files:
 
     question = st.chat_input("💬 Your message")
 
-    if question:
-        if is_greeting_or_smalltalk(question):
-            ai_reply = get_random_greeting()
-            if "recommendation" not in ai_reply.lower() and "suggestion" not in ai_reply.lower():
-                ai_reply += "\n\n" + category_suggestion
-        elif is_farewell(question):
-            ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
+    # if question:
+    #     if is_greeting_or_smalltalk(question):
+    #         ai_reply = get_random_greeting()
+    #         if "recommendation" not in ai_reply.lower() and "suggestion" not in ai_reply.lower():
+    #             ai_reply += "\n\n" + category_suggestion
+    #     elif is_farewell(question):
+    #         ai_reply = "👋 Alright, take care! Let me know if you need help again later. Bye!"
 
-        else:
-            clarification = handle_vague_query(question)
-            if clarification:
-                ai_reply = clarification
-            else:
-                if not is_relevant_question(question, pdf_chunks, keywords, faiss_index):
-                    ai_reply = "❓ Sorry, I can only help with questions related to the laptop specifications you uploaded."
-                elif is_follow_up_question(question, st.session_state.history, embedding_model, faiss_index, pdf_chunks):
-                    ai_reply = handle_follow_up_question(question, st.session_state.history, pdf_chunks, embedding_model, faiss_index)
-                else:
-                    with st.spinner("🤔 Thinking..."):
+    #     else:
+    #         clarification = handle_vague_query(question)
+    #         if clarification:
+    #             ai_reply = clarification
+    #         else:
+    #             if not is_relevant_question(question, pdf_chunks, keywords, faiss_index):
+    #                 ai_reply = "❓ Sorry, I can only help with questions related to the laptop specifications you uploaded."
+    #             elif is_follow_up_question(question, st.session_state.history, embedding_model, faiss_index, pdf_chunks):
+    #                 ai_reply = handle_follow_up_question(question, st.session_state.history, pdf_chunks, embedding_model, faiss_index)
+    #             else:
+    #                 with st.spinner("🤔 Thinking..."):
+    #                     query_embedding = get_embeddings([question])[0]
+    #                     relevant_chunk_indices = search_faiss(query_embedding, faiss_index, k=3)
+    #                     relevant_chunks = [pdf_chunks[i] for i in relevant_chunk_indices]
+    #                     context = "\n".join(relevant_chunks)
+    #                     ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
+
+    #     st.session_state.history.append({"user": question, "assistant": ai_reply})
+    #     st.rerun()
+
+    if question:
+        with st.spinner("🤔 Thinking..."):
                         query_embedding = get_embeddings([question])[0]
                         relevant_chunk_indices = search_faiss(query_embedding, faiss_index, k=3)
                         relevant_chunks = [pdf_chunks[i] for i in relevant_chunk_indices]
                         context = "\n".join(relevant_chunks)
                         ai_reply = ask_llm_with_history(question, context, st.session_state.history, hf_token)
 
-        st.session_state.history.append({"user": question, "assistant": ai_reply})
-        st.rerun()
+    st.session_state.history.append({"user": question, "assistant": ai_reply})
+    st.rerun()
 
     #save chat to pdf
     with st.sidebar:
