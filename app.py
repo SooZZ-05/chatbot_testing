@@ -11,11 +11,6 @@ import string
 import numpy as np
 import pdfplumber
 import faiss
-
-import streamlit.components.v1 as components
-import base64
-from gtts import gTTS
-
 from fpdf import FPDF
 from nltk.stem import WordNetLemmatizer
 from difflib import get_close_matches
