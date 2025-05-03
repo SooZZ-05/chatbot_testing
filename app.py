@@ -428,3 +428,11 @@ elif not openai_api_key:
     st.error("🔐 API key not found.")
 elif not uploaded_files:
     st.info("Please upload a PDF with laptop specifications.")
+    
+st.title("🔊 Audio Playback Test")
+
+text = st.text_input("Enter text:", "Hello, Streamlit!")
+
+if st.button("Generate Audio"):
+    html_code = generate_audio_controls(text)
+    components.html(html_code, height=250)  # 🔥 KEY: height must be >200
