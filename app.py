@@ -404,6 +404,14 @@ if openai_api_key and uploaded_files:
         st.session_state.history.append({"user": question, "assistant": ai_reply})
         st.rerun()
 
+    st.title("🔊 Text-to-Speech with Manual Stop Control")
+
+text_input = st.text_input("Enter some text to convert to speech:", "Hello Streamlit!")
+
+if st.button("Generate & Play Audio"):
+    audio_html = generate_audio_html(text_input)
+    components.html(audio_html, height=200)
+
     #save chat to pdf
     with st.sidebar:
         st.markdown("### 💬 Options")
